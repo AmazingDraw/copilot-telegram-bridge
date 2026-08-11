@@ -27,7 +27,7 @@
     "agentsMd": "../agent-memory/AGENTS.md",
     "sessionState": "${HOME}/.copilot/session-state",
     "mcpConfig": "${HOME}/.copilot/mcp-config.json",
-    "codexAgentsDir": "${HOME}/.gemini/config/plugins/your-plugin/skills/your-skill",
+    "codexAgentsDir": "${HOME}/.codex",
     "codexSessionDir": "${HOME}/.codex/sessions",
     "codexStateDir": "/tmp/cu-card/codex"
   },
