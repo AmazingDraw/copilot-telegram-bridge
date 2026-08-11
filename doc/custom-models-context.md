@@ -158,20 +158,20 @@ App Context 面板右上角应显示 **500K / 1M**，而不是 128K。
 
 - 行为：独立 `createSession` / `resumeSession`，**不依赖**桌面是否打开。  
 - 真源：  
-  - `~/.copilot/extensions/telegram-bridge/config/models.json`  
+  - `~/.copilot/extensions/copilot-telegram-bridge/config/models.json`  
   - 装配逻辑：`lib/byok-providers.mjs` → `buildHeadlessSessionConfig()`  
 - **不读取** `~/.copilot/data.db` 的 `provider_models`。  
 - 改完 json 后必须：
 
 ```bash
-bash ~/.copilot/extensions/telegram-bridge/scripts/headless-daemon.sh restart
+bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh restart
 ```
 
 （或 env `HEADLESS_MODELS_CONFIG` 指向另一份配置文件后重启。）
 
 ### 3.3 无头 models.json 结构
 
-路径：`~/.copilot/extensions/telegram-bridge/config/models.json`
+路径：`~/.copilot/extensions/copilot-telegram-bridge/config/models.json`
 
 ```json
 {
@@ -312,7 +312,7 @@ bash ~/.copilot/extensions/telegram-bridge/scripts/headless-daemon.sh restart
 
 ```bash
 # 无头
-tail -80 ~/.copilot/extensions/telegram-bridge/bots/Headless/daemon.log
+tail -80 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log
 
 # cliproxy 是否活着
 curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8317/v1/models
@@ -325,11 +325,11 @@ curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8317/v1/models
 | 用途 | 路径 |
 | :--- | :--- |
 | 桌面配置库 | `~/.copilot/data.db` |
-| 无头模型清单 | `~/.copilot/extensions/telegram-bridge/config/models.json` |
-| 无头 BYOK 代码 | `~/.copilot/extensions/telegram-bridge/lib/byok-providers.mjs` |
-| 无头守护脚本 | `~/.copilot/extensions/telegram-bridge/scripts/headless-daemon.sh` |
+| 无头模型清单 | `~/.copilot/extensions/copilot-telegram-bridge/config/models.json` |
+| 无头 BYOK 代码 | `~/.copilot/extensions/copilot-telegram-bridge/lib/byok-providers.mjs` |
+| 无头守护脚本 | `~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh` |
 | cliproxy 配置 | `~/.cli-proxy-api/config.yaml` |
-| 本文 | `~/.copilot/extensions/telegram-bridge/doc/custom-models-context.md` |
+| 本文 | `~/.copilot/extensions/copilot-telegram-bridge/doc/custom-models-context.md` |
 | 无头架构 | `doc/headless-daemon.md` |
 | Bridge 总览 | `doc/README.md` |
 

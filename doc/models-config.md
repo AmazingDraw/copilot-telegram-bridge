@@ -1,7 +1,7 @@
 # 模型管理手册（无头 BYOK）
 
 > 目标读者：任何 AI / 人 —— 看完就能**一次改对**模型，不出错。
-> 改完唯一必做：`bash ~/.copilot/extensions/telegram-bridge/scripts/headless-daemon.sh restart`
+> 改完唯一必做：`bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh restart`
 
 ---
 
@@ -20,7 +20,7 @@
 **每改一次都要重启**：
 
 ```bash
-bash ~/.copilot/extensions/telegram-bridge/scripts/headless-daemon.sh restart
+bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh restart
 ```
 
 ---
@@ -61,7 +61,7 @@ models.json
 
 ## 2. 当前 providers 速查
 
-文件：`~/.copilot/extensions/telegram-bridge/config/models.json`
+文件：`~/.copilot/extensions/copilot-telegram-bridge/config/models.json`
 
 | Provider id | baseUrl | 默认 enabled | 用途 | 模型数量 |
 | :--- | :--- | :--- | :--- | :--- |
@@ -83,8 +83,8 @@ models.json
 **Step 1**：用编辑器打开
 
 ```bash
-code ~/.copilot/extensions/telegram-bridge/config/models.json
-# 或 vim ~/.copilot/extensions/telegram-bridge/config/models.json
+code ~/.copilot/extensions/copilot-telegram-bridge/config/models.json
+# 或 vim ~/.copilot/extensions/copilot-telegram-bridge/config/models.json
 ```
 
 **Step 2**：定位到该模型。它在 `providers[0]`（id=`opencodex`）的 `models[]` 里：
@@ -111,13 +111,13 @@ code ~/.copilot/extensions/telegram-bridge/config/models.json
 **Step 4**：重启
 
 ```bash
-bash ~/.copilot/extensions/telegram-bridge/scripts/headless-daemon.sh restart
+bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh restart
 ```
 
 **Step 5**：验证
 
 ```bash
-tail -20 ~/.copilot/extensions/telegram-bridge/bots/Headless/daemon.log | grep cursor-grok
+tail -20 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log | grep cursor-grok
 # 应该看不到 opencodex/cursor-grok-4.5-low
 ```
 
@@ -305,14 +305,14 @@ apiKeyEnv（环境变量）→ apiKeyFromFile（文件）→ apiKeyFromCliproxyY
 
 ```bash
 # 1. JSON 语法
-python3 -m json.tool ~/.copilot/extensions/telegram-bridge/config/models.json > /dev/null && echo "JSON OK"
+python3 -m json.tool ~/.copilot/extensions/copilot-telegram-bridge/config/models.json > /dev/null && echo "JSON OK"
 
 # 2. 重启
-bash ~/.copilot/extensions/telegram-bridge/scripts/headless-daemon.sh restart
+bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh restart
 
 # 3. 等 5 秒看日志
 sleep 5
-tail -30 ~/.copilot/extensions/telegram-bridge/bots/Headless/daemon.log | grep -E "BYOK|providers=|/models ok"
+tail -30 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log | grep -E "BYOK|providers=|/models ok"
 ```
 
 **期望看到**：

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # fix-model-tokens.sh — 修复桌面 App 自定义模型的上下文窗口设置
 # 每次在 Copilot App 里移除/重新添加模型后，跑一次本脚本即可还原正确值。
-# 用法: bash ~/.copilot/extensions/telegram-bridge/scripts/fix-model-tokens.sh
+# 用法: bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/fix-model-tokens.sh
 
 set -euo pipefail
 

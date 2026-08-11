@@ -1,6 +1,6 @@
 # 无头 Bot（Headless）运行机制
 
-> 对应扩展：`~/.copilot/extensions/telegram-bridge`  
+> 对应扩展：`~/.copilot/extensions/copilot-telegram-bridge`  
 > 相关变更：CHANGELOG §24（独立守护）· §25（LaunchAgent 开机自启）  
 > 读者：运维 / 排障；与桌面 editor bot（`Copilot`）对照：[`editor-bot.md`](./editor-bot.md)。
 
@@ -217,7 +217,7 @@ Slash：`/session` `/clean` `/model` `/mode` `/status` `/rich` `/stop` 等与 RE
 ### 8.2 脚本子命令
 
 ```bash
-EXT=~/.copilot/extensions/telegram-bridge/scripts/headless-daemon.sh
+EXT=~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh
 
 bash "$EXT" install     # 装 plist + bootstrap + kickstart
 bash "$EXT" uninstall   # bootout + 删 plist + 杀进程
@@ -238,7 +238,7 @@ bash "$EXT" run         # 前台 exec（仅 launchd 或调试用）
 
 ```bash
 # 1) 守护
-bash ~/.copilot/extensions/telegram-bridge/scripts/headless-daemon.sh status
+bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh status
 # 期望：running · launchd=loaded · leader 含 "mode":"daemon"
 
 # 2) launchd
@@ -248,7 +248,7 @@ launchctl print "gui/$(id -u)/com.copilot-telegram-bridge" | head
 curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8317/v1/models
 
 # 4) 日志尾
-tail -50 ~/.copilot/extensions/telegram-bridge/bots/Headless/daemon.log
+tail -50 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log
 # 期望：acquired headless leadership mode=daemon · session resumed/created · 无连续 poll error
 ```
 
@@ -290,7 +290,7 @@ tail -50 ~/.copilot/extensions/telegram-bridge/bots/Headless/daemon.log
 
 ```text
 扩展根
-  ~/.copilot/extensions/telegram-bridge/
+  ~/.copilot/extensions/copilot-telegram-bridge/
     extension.mjs
     lib/headless-leader.mjs
     lib/bot-runtime.mjs

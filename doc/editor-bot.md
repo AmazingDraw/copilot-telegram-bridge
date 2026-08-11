@@ -1,6 +1,6 @@
 # 桌面 / 编辑器 Bot（Editor · Copilot）
 
-> 对应扩展：`~/.copilot/extensions/telegram-bridge`  
+> 对应扩展：`~/.copilot/extensions/copilot-telegram-bridge`  
 > 默认 registry key：`Copilot`（`config/bots.json`）  
 > Telegram：`@YourCopilotBot`（以 BotFather 为准；`label` 可改显示名）  
 > 对照文档：无头守护见 [`headless-daemon.md`](./headless-daemon.md)；总览见 [`README.md`](./README.md)
@@ -206,7 +206,7 @@ CLI / 会话 slash（扩展侧）：
 
 ```bash
 # 无头常驻（不碰 editor）
-bash ~/.copilot/extensions/telegram-bridge/scripts/headless-daemon.sh status
+bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh status
 
 # 桌面：打开 App 会话即可；改扩展后
 # App 内 extensions_reload 或重进 session
