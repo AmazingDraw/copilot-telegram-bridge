@@ -14,19 +14,22 @@
 
 ## 📦 安装
 
-```bash
-# 1. 克隆仓库
-git clone https://github.com/AmazingDraw/copilot-telegram-bridge.git
-cd copilot-telegram-bridge
+这是一个 **GitHub Copilot CLI 扩展**，需克隆到扩展加载目录 `~/.copilot/extensions` 才能被 Copilot 宿主加载。
 
-# 2. 安装依赖（Copilot SDK 由扩展宿主注入，仓库自带 lib/）
-# 3. 配置 config/bots.json（BotFather 创建 bot，填 token）
-# 4. 配置 config/access.json（允许的 Telegram user id）
-# 5. 复制 models.example → models.json 并按需改
-# 6. 运行无头守护
+```bash
+# 1. 克隆到扩展目录（Copilot 宿主扫描此目录加载扩展）
+mkdir -p ~/.copilot/extensions
+git clone https://github.com/AmazingDraw/copilot-telegram-bridge.git ~/.copilot/extensions/copilot-telegram-bridge
+cd ~/.copilot/extensions/copilot-telegram-bridge
+
+# 2. 配置 config/bots.json（BotFather 创建 bot，填 token）
+# 3. 配置 config/access.json（允许的 Telegram user id）
+# 4. 复制 models.example → models.json 并按需改
+# 5. 安装无头守护（LaunchAgent + 启动）
 bash scripts/headless-daemon.sh install
 ```
 
+> 之后重启 Copilot CLI / 桌面 App 让扩展加载。
 > 详细文档见 [`doc/`](./doc/)：安装、配置、模型管理、无头守护、排障。
 
 ## 🚀 快速开始
