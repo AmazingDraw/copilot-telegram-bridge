@@ -1,0 +1,16 @@
+{
+  "name": "copilot-cli-telegram-bridge",
+  "description": "Bidirectional Telegram bridge for GitHub Copilot CLI. Send messages from Telegram and get agent responses back.",
+  "version": "1.0.0",
+  "author": {
+    "name": "AmazingDraw",
+    "url": "https://github.com/AmazingDraw"
+  },
+  "homepage": "https://github.com/AmazingDraw/copilot-telegram-bridge",
+  "repository": "https://github.com/AmazingDraw/copilot-telegram-bridge",
+  "license": "MIT",
+  "keywords": ["telegram", "bridge", "remote", "messaging"],
+  "category": "integration",
+  "skills": "skills/",
+  "postInstallMessage": "Restart Copilot CLI, then run /copilot-cli-telegram-bridge:telegram-install to complete setup."
+}

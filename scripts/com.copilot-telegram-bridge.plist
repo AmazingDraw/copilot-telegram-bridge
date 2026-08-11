@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Template for headless-daemon.sh install.
+  install 时 sed 替换:
+    placeholder HOME -> $HOME
+    placeholder EXT_DIR -> telegram-bridge 绝对路径
+  Label: com.copilot-telegram-bridge
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.copilot-telegram-bridge</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>__EXT_DIR__/scripts/headless-daemon.sh</string>
+		<string>run</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>__EXT_DIR__</string>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>ThrottleInterval</key>
+	<integer>10</integer>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>StandardOutPath</key>
+	<string>__EXT_DIR__/bots/Headless/daemon.log</string>
+	<key>StandardErrorPath</key>
+	<string>__EXT_DIR__/bots/Headless/daemon.log</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>HOME</key>
+		<string>__HOME__</string>
+	</dict>
+</dict>
+</plist>

@@ -1,0 +1,27 @@
+{
+  "name": "examon-plugins",
+  "owner": {
+    "name": "examon"
+  },
+  "metadata": {
+    "description": "Copilot CLI plugins by examon",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "telegram-bridge",
+      "source": ".",
+      "description": "Bidirectional Telegram bridge for GitHub Copilot CLI. Send messages from Telegram and get agent responses back.",
+      "version": "1.0.0",
+      "author": {
+        "name": "examon",
+        "url": "https://github.com/examon"
+      },
+      "homepage": "https://github.com/examon/copilot-cli-telegram-bridge",
+      "license": "MIT",
+      "keywords": ["telegram", "bridge", "remote", "messaging"],
+      "category": "integration",
+      "skills": "skills/"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+.env
+access.json
+state.json
+lock.json
+install.sh
+CLAUDE.md
+bots.json
+bots/
+config/access.json
+config/bots.json

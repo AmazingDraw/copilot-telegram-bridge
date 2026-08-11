@@ -1,0 +1,246 @@
+{
+  "$comment": "无头 BYOK 模型与路径。改完后: bash scripts/headless-daemon.sh restart。密钥不写这里，走 env / apiKeyFromFile / cliproxy yaml。可用 ${HOME}。覆盖路径: env HEADLESS_MODELS_CONFIG。models 支持 string 或 {id,enabled,maxPromptTokens,maxContextWindowTokens,maxOutputTokens}；enabled 缺省 true。注意：本文件与桌面 App 的 ~/.copilot/data.db 无关，两边要分别改。",
+  "defaultModel": "deepseek-v4-flash",
+  "display": {
+    "officialModels": {
+      "enabled": true,
+      "allowIds": []
+    },
+    "nameDedup": "suffix-provider",
+    "unknownBareId": "hide"
+  },
+  "preferredOrder": [
+    "deepseek-v4-flash",
+    "deepseek-v4-pro",
+    "mimo-v2.5",
+    "mimo-v2.5-pro",
+    "gemini-3.6-flash-high",
+    "claude-sonnet-4-6",
+    "cursor-grok-4.5-high",
+    "cursor-grok-4.5-medium",
+    "cursor-grok-4.5-low",
+    "composer-2.5"
+  ],
+  "officialFallback": "mai-code-1-flash",
+  "paths": {
+    "cliproxyConfig": "${HOME}/.cli-proxy-api/config.yaml",
+    "agentsMd": "../agent-memory/AGENTS.md",
+    "sessionState": "${HOME}/.copilot/session-state",
+    "mcpConfig": "${HOME}/.copilot/mcp-config.json",
+    "codexAgentsDir": "${HOME}/.gemini/config/plugins/your-plugin/skills/your-skill",
+    "codexSessionDir": "${HOME}/.codex/sessions",
+    "codexStateDir": "/tmp/cu-card/codex"
+  },
+  "launchAgentLabel": "com.copilot-telegram-bridge",
+  "providers": [
+    {
+      "$comment": "OpenCodex 10100：当前默认第三方上游，10 个模型全走这里。整组 enabled=false 可一键关闭；单个模型 enabled=false 单独关闭。",
+      "id": "opencodex",
+      "enabled": true,
+      "type": "openai",
+      "baseUrl": "http://127.0.0.1:10100/v1",
+      "baseUrlEnv": [
+        "OPENCODEX_BASE_URL"
+      ],
+      "apiKeyEnv": [
+        "OPENCODEX_API_KEY"
+      ],
+      "apiKeyFromFile": "${HOME}/.opencodex/admin-api-token",
+      "models": [
+        {
+          "id": "deepseek-v4-flash",
+          "enabled": true,
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "deepseek-v4-pro",
+          "enabled": true,
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "mimo-v2.5",
+          "enabled": true,
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "mimo-v2.5-pro",
+          "enabled": true,
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "gemini-3.6-flash-high",
+          "enabled": true,
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 65536
+        },
+        {
+          "id": "claude-sonnet-4-6",
+          "enabled": true,
+          "maxPromptTokens": 200000,
+          "maxContextWindowTokens": 200000,
+          "maxOutputTokens": 16384
+        },
+        {
+          "id": "cursor-grok-4.5-high",
+          "enabled": true,
+          "maxPromptTokens": 256000,
+          "maxContextWindowTokens": 256000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "cursor-grok-4.5-medium",
+          "enabled": true,
+          "maxPromptTokens": 256000,
+          "maxContextWindowTokens": 256000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "cursor-grok-4.5-low",
+          "enabled": true,
+          "maxPromptTokens": 256000,
+          "maxContextWindowTokens": 256000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "composer-2.5",
+          "enabled": true,
+          "maxPromptTokens": 200000,
+          "maxContextWindowTokens": 200000,
+          "maxOutputTokens": 32000
+        }
+      ]
+    },
+    {
+      "$comment": "[回滚开关] OpenCode：原 mimo + DeepSeek 上游。要回滚：把本组 enabled=true 并把 opencodex 组 enabled=false。",
+      "id": "opencode",
+      "enabled": false,
+      "type": "openai",
+      "baseUrl": "https://opencode.ai/zen/go/v1",
+      "baseUrlEnv": [
+        "OPENCODE_BASE_URL",
+        "OPENCODE_GO_BASE_URL"
+      ],
+      "apiKeyEnv": [
+        "OPENCODE_API_KEY",
+        "OPENCODE_GO_API_KEY"
+      ],
+      "models": [
+        {
+          "id": "deepseek-v4-flash",
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "deepseek-v4-pro",
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "mimo-v2.5",
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "mimo-v2.5-pro",
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        }
+      ]
+    },
+    {
+      "$comment": "[回滚开关] cliproxy 8317：原 gemini/claude/cursor-grok/composer 上游。要回滚：把本组 enabled=true 并把 opencodex 组 enabled=false。",
+      "id": "cliproxy",
+      "enabled": false,
+      "type": "openai",
+      "baseUrl": "http://127.0.0.1:8317/v1",
+      "baseUrlEnv": [
+        "CLIPROXY_BASE_URL",
+        "CLI_PROXY_BASE_URL"
+      ],
+      "apiKeyEnv": [
+        "CLIPROXY_API_KEY",
+        "CLI_PROXY_API_KEY"
+      ],
+      "apiKeyFromCliproxyYaml": true,
+      "portFromCliproxyYaml": true,
+      "models": [
+        {
+          "id": "gemini-3.6-flash-high",
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 65536
+        },
+        {
+          "id": "claude-sonnet-4-6",
+          "maxPromptTokens": 200000,
+          "maxContextWindowTokens": 200000,
+          "maxOutputTokens": 16384
+        },
+        {
+          "id": "cursor-grok-4.5-high",
+          "maxPromptTokens": 256000,
+          "maxContextWindowTokens": 256000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "cursor-grok-4.5-medium",
+          "maxPromptTokens": 256000,
+          "maxContextWindowTokens": 256000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "cursor-grok-4.5-low",
+          "maxPromptTokens": 256000,
+          "maxContextWindowTokens": 256000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "composer-2.5",
+          "maxPromptTokens": 200000,
+          "maxContextWindowTokens": 200000,
+          "maxOutputTokens": 32000
+        }
+      ]
+    },
+    {
+      "$comment": "官方直连 DeepSeek API：保留为紧急回退。默认 enabled=false。",
+      "id": "deepseek",
+      "enabled": false,
+      "type": "openai",
+      "baseUrl": "https://api.deepseek.com/v1",
+      "baseUrlEnv": [
+        "DEEPSEEK_BASE_URL"
+      ],
+      "apiKeyEnv": [
+        "DEEPSEEK_API_KEY"
+      ],
+      "models": [
+        {
+          "id": "deepseek-v4-flash",
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "deepseek-v4-pro",
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        }
+      ]
+    }
+  ]
+}
