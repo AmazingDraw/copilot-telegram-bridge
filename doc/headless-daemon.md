@@ -37,7 +37,7 @@
 │       ▼                                                     │
 │  extension.mjs                                              │
 │       │  headless-only：启动所有 role=headless 的 bot       │
-│       │  （跳过 editor；如 Headless + PromptReverse）       │
+│       │  （跳过 editor；如 Headless + SecondaryBot）       │
 │       ├─ 每 bot 独立 leader / sticky / poll                 │
 │       ├─ create/resume + BYOK（models.json）                │
 │       ├─ 用户 MCP 显式注入（mcp-config.json；可 per-bot 关） │
@@ -78,7 +78,7 @@
 | `headless-only` | **仅** headless（独立守护） |
 | `editor-only` / `app-editor` | 仅 editor（预留） |
 
-角色划分：`bots.json` 的 **`role` 优先**（`editor` \| `headless`）；未写时启用序 **第 1 个 = editor**，其后 = headless。`headless-only` 下可同时跑 **多个无头 bot**（如 Headless + PromptReverse），各有独立 session/leader。
+角色划分：`bots.json` 的 **`role` 优先**（`editor` \| `headless`）；未写时启用序 **第 1 个 = editor**，其后 = headless。`headless-only` 下可同时跑 **多个无头 bot**（如 Headless + SecondaryBot），各有独立 session/leader。
 
 ### 3.2 启动命令实质
 
@@ -193,7 +193,7 @@
 | 发送队列 | 串行 + pace；429 按 `retry_after` 回队 |
 | Typing | `sendChatAction` **旁路** queue；turn_end / slash / idle 必须停 |
 | Tool bubble | 临时状态消息；turn 结束延迟删除（以实现代码为准） |
-| 权限 / ask_user | **默认无头**（`permissionMode` 缺省 / allow-all）：`setAllowAll` + handler `approve-once`。**deny-all**（如 PromptReverse）：`setAllowAll(false)` + handler `deny-once`。**Editor**：`bots.json` 可设 `allow-all`（现默认已开）或 `ask`（TG 批准卡）。`ask_user` 用 freeform/按钮解冻 awaitingInput |
+| 权限 / ask_user | **默认无头**（`permissionMode` 缺省 / allow-all）：`setAllowAll` + handler `approve-once`。**deny-all**（如 SecondaryBot）：`setAllowAll(false)` + handler `deny-once`。**Editor**：`bots.json` 可设 `allow-all`（现默认已开）或 `ask`（TG 批准卡）。`ask_user` 用 freeform/按钮解冻 awaitingInput |
 | 准入 | 默认 **allowlist**（`access.json` 配对）；**open-group** 等见 bot profile |
 
 Slash：`/session` `/clean` `/model` `/mode` `/status` `/rich` `/stop` 等与 README 一致；**restricted** bot 菜单可缩到仅 `/start` `/stop`。无头侧 `/session` 切换的是 **该 bot sticky 会话**。`/rich` **默认关**（表格→列表）；`on` 才走富文本表。
@@ -307,7 +307,7 @@ tail -50 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log
       headless.leader.json
       lock.json
       state.json
-    bots/PromptReverse/          # 其他无头 bot 同结构（无 daemon.pid）
+    bots/SecondaryBot/          # 其他无头 bot 同结构（无 daemon.pid）
 
 用户级
   ~/.copilot/mcp-config.json     # 用户 MCP 真源（显式注入 session）
@@ -347,7 +347,7 @@ CLI 缓存
 
 日志：`setAllowAll(true) ok` / `auto-approved permission kind=`。
 
-### 13.2 deny-all（如 PromptReverse）
+### 13.2 deny-all（如 SecondaryBot）
 
 1. `setAllowAll(false)` + `setApproveAll(false)`
 2. Handler：`{ kind: "deny-once" }`
@@ -372,7 +372,7 @@ CLI 缓存
 
 实现：`lib/byok-providers.mjs` → `loadUserMcpServers` / `normalizeMcpServerConfig`。
 
-**验收**：Headless 对话中真实调用 tavily/notion/dayone 工具；PromptReverse 不应起 MCP 子进程。
+**验收**：Headless 对话中真实调用 tavily/notion/dayone 工具；SecondaryBot 不应起 MCP 子进程。
 
 ---
 

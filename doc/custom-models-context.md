@@ -250,7 +250,7 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh re
 
 - 只影响该 bot 的 `buildHeadlessSessionConfig` 过滤与默认选择  
 - 不改变其他 bot 的 `/model` 列表装配  
-- 例：PromptReverse 仅 `opencodex/cursor-grok-4.5-low`；Headless 仍十模型
+- 例：SecondaryBot 仅 `opencodex/cursor-grok-4.5-low`；Headless 仍十模型
 
 改后 `headless-daemon.sh restart`。
 
