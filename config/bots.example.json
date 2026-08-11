@@ -1,0 +1,16 @@
+{
+  "YourBot": {
+    "token": "<YOUR_BOT_TOKEN_FROM_BOTFATHER>",
+    "username": "YourCopilotBot",
+    "addedAt": "2026-01-01T00:00:00.000Z",
+    "label": "Copilot",
+    "permissionMode": "allow-all"
+  },
+  "Headless": {
+    "token": "<YOUR_HEADLESS_BOT_TOKEN>",
+    "username": "YourHeadlessBot",
+    "addedAt": "2026-01-01T00:00:00.000Z",
+    "disabled": false,
+    "label": "Headless"
+  }
+}

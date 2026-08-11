@@ -43,9 +43,22 @@ bash scripts/headless-daemon.sh install
 | `config/bots.json` | Bot token / 用户名 / 角色 / 权限 |
 | `config/access.json` | 允许的 Telegram 用户 |
 | `config/models.json` | 模型 / provider / 上下文窗口 / 显示规则 |
+| `config/bots.example.json` | Bot 配置示例（复制为 bots.json） |
+| `config/access.example.json` | 授权示例（复制为 access.json） |
 | `config/models.example.json` | 模型配置示例（复制为 models.json） |
 
 所有敏感信息（token / 用户 id）**不提交**到仓库（`.gitignore` 忽略）。
+
+### 🔧 首次使用（复制示例 → 填真实值）
+
+```bash
+cp config/bots.example.json config/bots.json      # 填 BotFather token
+cp config/access.example.json config/access.json  # 填你的 Telegram user id
+cp config/models.example.json config/models.json  # 按需改模型
+bash scripts/headless-daemon.sh install           # 装 LaunchAgent + 启动
+```
+
+`bots/` 目录会在首次连接时自动生成，无需手动创建。
 
 ## 🧩 架构
 
