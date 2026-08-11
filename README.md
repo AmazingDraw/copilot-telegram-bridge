@@ -1,12 +1,19 @@
 # Copilot Telegram Bridge
 
-双向 Telegram 桥接：在手机 Telegram 里控制 **GitHub Copilot CLI / 桌面会话**。
+双向 Telegram 桥接：在手机 Telegram 里控制 **GitHub Copilot 桌面版（Desktop App）会话**。
+
+> ⚠️ **基于 Copilot 桌面版，不是独立 CLI 版。**
+> 本扩展作为 **GitHub Copilot 桌面 App 的扩展进程**运行：
+> - Editor bot 通过 `joinSession` 挂载到**桌面 App 当前会话**
+> - Headless 守护进程使用桌面 App 解包出的 CLI 二进制 + SDK，**依赖桌面 App 曾经写入的缓存**
+> - 桌面 App 关闭时，Headless 仍可独立工作，但 **SDK 运行时文件来自桌面安装**
+> 它不是 npm 安装的独立 `copilot` CLI 扩展。
 
 ## ✨ 功能
 
 - **Telegram ↔ Copilot**：手机发指令，Copilot 执行并回复到 Telegram
 - **多 Bot 支持**：Editor（桌面会话）/ Headless（独立守护）/ 自定义角色
-- **无头守护**：LaunchAgent 托管，崩溃自愈、开机自启，不依赖桌面窗口
+- **无头守护**：LaunchAgent 托管，崩溃自愈、开机自启，不依赖桌面窗口（但依赖桌面版安装的 SDK 运行时文件）
 - **会话切换**：`/session` 列出历史会话，数字按钮快速切换
 - **模型管理**：`/model` 列出并切换本地 BYOK 模型，配置全部在 `config/models.json`
 - **Codex 子命令**：`/codex` 控制 OpenAI Codex CLI（新建/续接/排队/停止/取消）
@@ -14,7 +21,7 @@
 
 ## 📦 安装
 
-这是一个 **GitHub Copilot CLI 扩展**，需克隆到扩展加载目录 `~/.copilot/extensions` 才能被 Copilot 宿主加载。
+这是一个 **GitHub Copilot 桌面版扩展**，需克隆到扩展加载目录 `~/.copilot/extensions`，由**桌面 App 的扩展宿主**加载。
 
 ```bash
 # 1. 克隆到扩展目录（Copilot 宿主扫描此目录加载扩展）
