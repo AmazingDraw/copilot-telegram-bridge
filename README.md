@@ -17,6 +17,12 @@
 - **会话切换**：`/session` 列出历史会话，数字按钮快速切换
 - **模型管理**：`/model` 列出并切换本地 BYOK 模型，配置全部在 `config/models.json`
 - **Codex 子命令**：`/codex` 控制 OpenAI Codex CLI（新建/续接/排队/停止/取消）
+
+> ⚠️ **`/codex` 分支有额外依赖**：
+> - **Codex CLI**（`codex` 命令，独立于 Copilot）——`/codex` 实际执行的是它
+> - **opencodex 代理**（默认 `http://127.0.0.1:10100`）——模型目录（catalog）与模型路由由它提供
+> - 若本机未装 Codex CLI 或未起 opencodex，`/codex` 的新建/续接/模型切换会失败
+> - 桌面端检测：ChatGPT/Codex 桌面 App 打开时，CLI 无法正常响应，需先关闭（`/codex` 菜单有「🖥 关闭桌面」按钮）
 - **富格式渲染**：表格 / 定义列表 / 引用 / 代码块等 Markdown → Telegram HTML
 
 ## 📦 安装
@@ -85,7 +91,7 @@ extension.mjs（扩展宿主注入 SDK）     headless-daemon.sh run（独立守
    bot-runtime / bot-handlers / bot-commands
           │
           ├── Copilot SDK 会话（createSession / resumeSession）
-          ├── Codex CLI（/codex 子命令：exec / resume）
+          ├── Codex CLI + opencodex 代理（/codex 子命令：exec / resume / 模型目录）
           └── Telegram Long Poll（收发消息 + 按钮回调）
 ```
 
@@ -110,7 +116,7 @@ extension.mjs（扩展宿主注入 SDK）     headless-daemon.sh run（独立守
 Telegram 消息
    → Long Poll（getUpdates）
    → bot-runtime 准入（access.json）+ 斜杠路由
-   → Copilot SDK 会话（send）/ Codex CLI（exec）
+   → Copilot SDK 会话（send）/ Codex CLI（exec，经 opencodex 路由模型）
    → assistant.message 事件流
    → markdown-tg 渲染
    → sendMessage 回 Telegram（含工具气泡 / 表格 / 图片）
