@@ -8,3 +8,4 @@ bots.json
 bots/
 config/access.json
 config/bots.json
+.DS_Store
