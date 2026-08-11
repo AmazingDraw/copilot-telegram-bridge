@@ -65,13 +65,59 @@ bash scripts/headless-daemon.sh install           # 装 LaunchAgent + 启动
 
 ## 🧩 架构
 
+### 进程模型
+
 ```text
-Telegram ──► Long Poll ──► bot-runtime（消息路由/工具气泡/权限）
-                 │
-                 ├── Copilot SDK（Editor joinSession / Headless createSession）
-                 ├── Codex CLI（/codex 子命令，独立执行）
-                 └── Markdown → HTML 渲染管线
+GitHub Copilot 桌面 App            launchd (com.copilot-telegram-bridge)
+   │  joinSession（Editor bot）       │  KeepAlive 自启自愈
+   ▼                                 ▼
+extension.mjs（扩展宿主注入 SDK）     headless-daemon.sh run（独立守护）
+   │  editor 模式                     │  headless 模式
+   └──────┬──────────────────────────┘
+          ▼
+   bot-runtime / bot-handlers / bot-commands
+          │
+          ├── Copilot SDK 会话（createSession / resumeSession）
+          ├── Codex CLI（/codex 子命令：exec / resume）
+          └── Telegram Long Poll（收发消息 + 按钮回调）
 ```
+
+### 模块职责
+
+| 模块 | 职责 |
+| :--- | :--- |
+| `extension.mjs` | 入口：注册扩展、装配 bot、启动轮询 |
+| `lib/bot-runtime.mjs` | Long Poll、消息路由、工具气泡、发送队列、锁/心跳 |
+| `lib/bot-handlers.mjs` | SDK 事件流（assistant.message / 权限 / ask_user / 工具） |
+| `lib/bot-commands.mjs` | 斜杠命令 + 按钮回调（model/mode/session/clean/rename…） |
+| `lib/codex-commands.mjs` | `/codex` 子命令（新建/续接/排队/停止/取消/桌面检测） |
+| `lib/byok-providers.mjs` | 模型配置解析（models.json → SDK ProviderModelConfig） |
+| `lib/markdown-tg.mjs` | Markdown → Telegram HTML 渲染管线（表格/代码/定义列表…） |
+| `lib/session-fs.mjs` | 会话文件系统（workspace.yaml / inuse 锁 / 清理） |
+| `lib/headless-leader.mjs` | 无头单例 leader 认领（防多实例双写） |
+| `lib/bot-profile.mjs` | per-bot 角色/权限/冷却/profile 解析 |
+
+### 数据流（一次对话）
+
+```text
+Telegram 消息
+   → Long Poll（getUpdates）
+   → bot-runtime 准入（access.json）+ 斜杠路由
+   → Copilot SDK 会话（send）/ Codex CLI（exec）
+   → assistant.message 事件流
+   → markdown-tg 渲染
+   → sendMessage 回 Telegram（含工具气泡 / 表格 / 图片）
+```
+
+### 配置面
+
+| 配置 | 作用 |
+| :--- | :--- |
+| `config/bots.json` | bot 注册（token/角色/权限） |
+| `config/access.json` | 授权用户 |
+| `config/models.json` | 模型/provider/上下文/显示规则 |
+| `bots/<Name>/` | 运行时状态（自动生成：state/lock/daemon.log） |
+| `~/.copilot/session-state` | Copilot 会话存储（SDK 管理） |
 
 ## 📄 License
 
