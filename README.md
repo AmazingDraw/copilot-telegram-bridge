@@ -78,6 +78,10 @@ bash scripts/headless-daemon.sh install           # 装 LaunchAgent + 启动
 
 ## 🧩 架构
 
+<p align="center">
+  <img src="doc/架构图.svg" alt="Copilot Telegram Bridge 架构" width="100%" />
+</p>
+
 ### 进程模型
 
 ```text
