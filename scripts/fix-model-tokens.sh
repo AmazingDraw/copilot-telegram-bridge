@@ -18,7 +18,6 @@ echo ""
 # ── 自定义模型上下文规格表 ────────────────────────────────────────
 # model_id | max_prompt_tokens | max_output_tokens | 备注
 declare -a MODELS=(
-  "grok-4.5|500000|32000|Grok 4.5"
   "cursor-grok-4.5-high|256000|32000|Cursor Grok 4.5 High"
   "cursor-grok-4.5-medium|256000|32000|Cursor Grok 4.5 Medium"
   "cursor-grok-4.5-low|256000|32000|Cursor Grok 4.5 Low"
