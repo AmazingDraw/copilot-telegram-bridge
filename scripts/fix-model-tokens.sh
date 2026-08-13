@@ -33,6 +33,7 @@ declare -a MODELS=(
   "deepseek-v4-pro-max|1000000|32000|DeepSeek V4 Pro Max"
   "mimo-v2.5|1000000|32000|MiMo V2.5"
   "mimo-v2.5-pro|1000000|32000|MiMo V2.5 Pro"
+  "kimi-k3-high|1000000|32000|Kimi K3 High"
   "claude-sonnet-4-6|200000|16384|Claude Sonnet 4.6"
   "gemini-3.6-flash-high|1000000|65536|Gemini 3.6 Flash High"
 )
