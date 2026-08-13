@@ -164,8 +164,8 @@
 
 1. Headless 用 SDK **createSession / resumeSession**（非桌面 editor 会话直连）  
 2. 模型 **多源 BYOK**（真源 **`config/models.json`**，密钥不进文件）：  
-   - **OpenCodex 10100**（`apiKeyFromFile: ~/.opencodex/admin-api-token`，默认启用）→ `deepseek-v4-*`、`mimo-v2.5(-pro)`、`gemini-3.6-flash-high`、`claude-sonnet-4-6`、`cursor-grok-4.5-{high,medium,low}`、`composer-2.5` 共 10 个第三方模型，**模型 id 不变**  
-   - **OpenCode Go**（`OPENCODE_API_KEY`，整组 `enabled: false` 作回滚开关）→ `deepseek-v4-*`、`mimo-v2.5(-pro)`  
+   - **OpenCodex 10100**（`apiKeyFromFile: ~/.opencodex/admin-api-token`，默认启用）→ `deepseek-v4-{flash,pro}`、`mimo-v2.5(-pro)`、`gemini-3.6-flash-high`、`claude-sonnet-4-6`、`cursor-grok-4.5-{high,medium,low}`、`composer-2.5` 共 10 个第三方模型，**模型 id 不变**
+   - **OpenCode Go**（`OPENCODE_API_KEY`，整组 `enabled: false` 作回滚开关）→ `deepseek-v4-{flash,pro}`、`mimo-v2.5(-pro)`
    - **本地 CLI Proxy 8317**（整组 `enabled: false` 作回滚开关）→ `gemini-*`、`cursor-grok-*`、`composer-*`  
    - **DeepSeek 官方**（默认 `enabled: false`）→ `deepseek/deepseek-v4-flash`、`deepseek/deepseek-v4-pro`  
    - **模型级开关**：`models.json` 中每个模型条目可显式 `"enabled": false` 单独下线；provider 级 `enabled: false` 整组关闭  

@@ -75,13 +75,9 @@ a3e6682a-c75a-4bf3-82ae-793bdaa9da73/mimo-v2.5
 | `grok-4.5` | **500K**（xAI docs） | `500000` | `32000` |
 | `gemini-3.5-flash-low` | **1M**（Gemini 3.5 Flash） | `1000000` | `65536` |
 | `deepseek-v4-flash` | **1M** | `1000000` | `32000` |
-| `deepseek-v4-flash-low/high/max` | **1M** | `1000000` | `32000` |
 | `deepseek-v4-pro` | **1M** | `1000000` | `32000` |
-| `deepseek-v4-pro-low/high/max` | **1M** | `1000000` | `32000` |
 | `mimo-v2.5` | **1M** | `1000000` | `32000` |
 | `mimo-v2.5-pro` | **1M** | `1000000` | `32000` |
-
-> DeepSeek `*-low/high/max` 必须经 **cliproxy**（`payload.override` 注入 `reasoning.effort`）。桌面直连 `api.deepseek.com` 的 provider **无法**按模型 id 改思考强度。
 
 说明：
 
