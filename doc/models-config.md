@@ -91,8 +91,9 @@ Copilot 与 OpenCodex 的窗口可以不同，例如十进制 1M 与 1048576。�
   "id": "<provider-id>",
   "enabled": true,
   "type": "openai",
-  "baseUrl": "http://127.0.0.1:10100/v1",
-  "apiKeyFromFile": "${HOME}/path/to/token",
+  "baseUrl": "http://127.0.0.1:8317/v1",
+  "apiKeyFromCliproxyYaml": true,
+  "portFromCliproxyYaml": true,
   "modelSet": "headless"
 }
 ```
@@ -173,7 +174,7 @@ bash scripts/headless-daemon.sh restart
 | `cannot define both modelSet and models` | provider 同时使用新旧两套声明 |
 | `allowlist ∩ /models empty` | 配置 ID 与 live 上游目录不匹配 |
 
-OpenCodex `/v1/models` 只负责验证可用性，不会自动把新模型加入 Bridge，避免上游临时模型污染 Telegram 列表。
+上游 `/v1/models` 只负责验证可用性，不会自动把新模型加入 Bridge，避免临时模型污染 Telegram 列表。
 
 ## 7. 配置与生成产物
 

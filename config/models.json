@@ -207,19 +207,6 @@
         "mimo-v2.5-pro"
       ]
     },
-    "rollback-cliproxy": {
-      "models": [
-        "gemini-3.6-flash-high",
-        "claude-sonnet-4-6",
-        "cursor-grok-4.6-low",
-        "cursor-grok-4.6-medium",
-        "cursor-grok-4.6-high",
-        "cursor-grok-4.6-xhigh",
-        "kimi-k3-low",
-        "kimi-k3-high",
-        "kimi-k3-max"
-      ]
-    },
     "rollback-deepseek": {
       "models": [
         "deepseek-v4-flash",
@@ -258,9 +245,9 @@
   },
   "providers": [
     {
-      "$comment": "OpenCodex 10100：当前默认第三方上游。",
+      "$comment": "[回滚开关] OpenCodex 10100：把本组 enabled=true 并把 cliproxy 组 enabled=false。",
       "id": "opencodex",
-      "enabled": true,
+      "enabled": false,
       "type": "openai",
       "baseUrl": "http://127.0.0.1:10100/v1",
       "baseUrlEnv": [
@@ -289,9 +276,9 @@
       "modelSet": "rollback-opencode"
     },
     {
-      "$comment": "[回滚开关] cliproxy 8317：把本组 enabled=true 并把 opencodex 组 enabled=false。",
+      "$comment": "CLI Proxy 8317：当前默认第三方上游，直接承载 Headless 模型组。",
       "id": "cliproxy",
-      "enabled": false,
+      "enabled": true,
       "type": "openai",
       "baseUrl": "http://127.0.0.1:8317/v1",
       "baseUrlEnv": [
@@ -304,7 +291,7 @@
       ],
       "apiKeyFromCliproxyYaml": true,
       "portFromCliproxyYaml": true,
-      "modelSet": "rollback-cliproxy"
+      "modelSet": "headless"
     },
     {
       "$comment": "官方直连 DeepSeek API：默认 enabled=false，仅作紧急回退。",

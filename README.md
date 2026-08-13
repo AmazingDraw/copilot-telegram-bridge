@@ -108,11 +108,11 @@ createBotInstance(name, token, isHeadless)
 - 模型列表 = 桌面会话自带；**不**走无头 `config/models.json` 装配
 - `TELEGRAM_BRIDGE_MODE=headless-only` 时 daemon **跳过** editor
 
-### Headless BYOK（OpenCodex 默认上游）
+### Headless BYOK（CLI Proxy 默认上游）
 
 > 完整机制（CLI 缓存 / LaunchAgent / 排障 / MCP）：[`headless-daemon.md`](doc/headless-daemon.md)
 
-**当前默认上游**：**OpenCodex**（`http://127.0.0.1:10100/v1`，`apiKeyFromFile: ~/.opencodex/admin-api-token`）。实际模型列表只看 `config/models.json` 的 `modelSets.headless`，会话 id 形如 `opencodex/<id>`。
+**当前默认上游**：**CLI Proxy**（`http://127.0.0.1:8317/v1`，密钥读取 `~/.cli-proxy-api/config.yaml`）。实际模型列表只看 `config/models.json` 的 `modelSets.headless`，会话 id 形如 `cliproxy/<id>`。
 
 **开关与回滚**（`config/models.json`，改完 `headless-daemon.sh restart`）：
 
@@ -120,8 +120,8 @@ createBotInstance(name, token, isHeadless)
 - **单场景成员关系**：编辑对应 `modelSets.<name>.models`
 - **整组上游开关**：provider 级 `enabled: false`，每个 provider 只用 `modelSet` 引用模型组
 - **保留的回滚组**（默认全 `enabled: false`）：
+  - `opencodex` — OpenCodex 10100（`apiKeyFromFile`）
   - `opencode` — OpenCode Go 直连（`OPENCODE_API_KEY`）
-  - `cliproxy` — 本地 CLI Proxy 8317（`apiKeyFromCliproxyYaml`）
   - `deepseek` — DeepSeek 官方 API
 - **官方模型回退**：`officialFallback`，从 Copilot 目录走
 
@@ -137,7 +137,7 @@ createBotInstance(name, token, isHeadless)
 
 ### 无头独立守护（推荐 · 开机自启）
 
-**不依赖 GitHub Copilot 桌面版是否打开。** 进程只靠本地 CLI + bootstrap；第三方模型统一走 OpenCodex 10100。
+**不依赖 GitHub Copilot 桌面版是否打开。** 进程只靠本地 CLI + bootstrap；第三方模型直接走 CLI Proxy 8317。
 
 桌面 App **未进入具体 session** 时，挂在 App 树下的 Headless 可能被宿主节流（约两条后停）。独立守护脱离会话生命周期，并由 **LaunchAgent KeepAlive** 保活。
 

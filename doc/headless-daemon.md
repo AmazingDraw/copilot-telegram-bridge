@@ -41,7 +41,7 @@
 │       ├─ 每 bot 独立 leader / sticky / poll                 │
 │       ├─ create/resume + BYOK（models.json）                │
 │       ├─ 用户 MCP 显式注入（mcp-config.json；可 per-bot 关） │
-│       └─ OpenCode 直连 + cliproxy(grok) :8317               │
+│       └─ CLI Proxy :8317 直连 BYOK                           │
 └─────────────────────────────────────────────────────────────┘
 
 可选并行（不负责无头主路径）：
@@ -166,6 +166,7 @@
 2. 模型唯一真源是 **`config/models.json`**：
    - `catalog` 唯一保存模型窗口与 `/fixctx` 规格。
    - `modelSets.headless` 决定主 Bot 列表、排序与默认模型。
+   - 当前启用 provider 是 `cliproxy`，直接连接本机 CLI Proxy 8317。
    - 回滚 provider 与单 Bot 只引用各自 `modelSet`，不复制模型对象。
    - `providers[].enabled` 控制上游切换；同一时刻建议只启用一个第三方 provider。
 3. Key/URL：`loadShellEnvForByok()` 读 bash 的 `DEEPSEEK_*` / `OPENCODE_*` / `COPILOT_*` / `CLIPROXY_*`；`paths.cliproxyConfig` 可用 `${HOME}`；`paths.agentsMd` 默认 `../agent-memory/AGENTS.md`（与 join 共用；也可用 `${EXTENSIONS}` / `${BRIDGE_ROOT}`）。
@@ -259,7 +260,7 @@ tail -50 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log
 | 宿主 | Copilot App / 会话内扩展 | launchd → CLI + bootstrap |
 | 模式 | 默认 `all` | 强制 `headless-only` |
 | 会话 | 当前桌面 session | create/resume + sticky UUID |
-| 模型 | 桌面会话模型列表 | OpenCode 四模型 + cliproxy grok |
+| 模型 | 桌面会话模型列表 | CLI Proxy 8317 + `modelSets.headless` |
 | 节流风险 | 未进 session 时可能卡 | **无此路径** |
 | Leader | mode=`app`，让位 daemon | mode=`daemon`，可抢 app |
 
