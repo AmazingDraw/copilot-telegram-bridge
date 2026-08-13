@@ -65,9 +65,9 @@ models.json
 
 | Provider id | baseUrl | 默认 enabled | 用途 | 模型数量 |
 | :--- | :--- | :--- | :--- | :--- |
-| `opencodex` | `http://127.0.0.1:10100/v1` | ✅ `true` | **当前默认第三方上游** | 10 |
+| `opencodex` | `http://127.0.0.1:10100/v1` | ✅ `true` | **当前默认第三方上游** | 13 |
 | `opencode` | `https://opencode.ai/zen/go/v1` | ❌ `false` | 回滚用（原 mimo+DeepSeek） | 4 |
-| `cliproxy` | `http://127.0.0.1:8317/v1` | ❌ `false` | 回滚用（原 gemini/claude/cursor-grok/composer） | 6 |
+| `cliproxy` | `http://127.0.0.1:8317/v1` | ❌ `false` | 回滚用（原 gemini/claude/cursor-grok/kimi） | 9 |
 | `deepseek` | `https://api.deepseek.com/v1` | ❌ `false` | 紧急回退 DeepSeek 官方 API | 2 |
 
 **红线**：同一时刻只应有 **一个** 第三方 provider `enabled: true`，否则会话模型 id 冲突。
@@ -78,7 +78,7 @@ models.json
 
 ### 3.1 关掉一个模型（最常用）
 
-例：关掉 `cursor-grok-4.5-low`。
+例：关掉 `cursor-grok-4.6-low`。
 
 **Step 1**：用编辑器打开
 
@@ -91,7 +91,7 @@ code ~/.copilot/extensions/copilot-telegram-bridge/config/models.json
 
 ```json
 {
-  "id": "cursor-grok-4.5-low",
+  "id": "cursor-grok-4.6-low",
   "enabled": true,
   "maxPromptTokens": 256000,
   ...
@@ -102,7 +102,7 @@ code ~/.copilot/extensions/copilot-telegram-bridge/config/models.json
 
 ```json
 {
-  "id": "cursor-grok-4.5-low",
+  "id": "cursor-grok-4.6-low",
   "enabled": false,
   ...
 }
@@ -118,10 +118,10 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh re
 
 ```bash
 tail -20 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log | grep cursor-grok
-# 应该看不到 opencodex/cursor-grok-4.5-low
+# 应该看不到 opencodex/cursor-grok-4.6-low
 ```
 
-或在 Telegram 里 `/model` 看按钮列表，应该没有 `cursor-grok-4.5-low`。
+或在 Telegram 里 `/model` 看按钮列表，应该没有 `cursor-grok-4.6-low`。
 
 ---
 

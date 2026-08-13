@@ -147,7 +147,7 @@ App Context 面板右上角应显示 **500K / 1M**，而不是 128K。
 
 - 行为：`joinSession` 接到**已打开的桌面会话**。  
 - 模型列表 = 该桌面会话自带模型（官方 + 桌面已配 BYOK）。  
-- **不**使用 `config/models.json` 的十模型装配。
+- **不**使用 `config/models.json` 的无头模型装配。
 - 因此：改 `data.db` 后，桌面会话用上大窗口 → Editor bot 跟同一会话也用大窗口。
 
 ### 3.2 Headless bot（`Headless`）
@@ -180,8 +180,9 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh re
   "preferredOrder": [
     "deepseek-v4-flash", "deepseek-v4-pro", "mimo-v2.5", "mimo-v2.5-pro",
     "gemini-3.6-flash-high", "claude-sonnet-4-6",
-    "cursor-grok-4.5-high", "cursor-grok-4.5-medium", "cursor-grok-4.5-low",
-    "composer-2.5"
+    "cursor-grok-4.6-low", "cursor-grok-4.6-medium",
+    "cursor-grok-4.6-high", "cursor-grok-4.6-xhigh",
+    "kimi-k3-low", "kimi-k3-high", "kimi-k3-max"
   ],
   "officialFallback": "mai-code-1-flash",
   "paths": {
@@ -204,7 +205,7 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh re
 }
 ```
 
-> 当前启用 provider：**opencodex（10100）**，10 个第三方模型全走它。opencode / cliproxy / deepseek 直连均为 `enabled: false` 回滚组。
+> 当前启用 provider：**opencodex（10100）**，13 个第三方模型全走它。opencode / cliproxy / deepseek 直连均为 `enabled: false` 回滚组。
 > `display.officialModels.allowIds` 为空 → `/model` 不显示官方模型（精确 ID 白名单）。
 
 兼容：
@@ -226,8 +227,9 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh re
 
 | 会话 id 形态 | 上游 | 模型 |
 | :--- | :--- | :--- |
-| `opencodex/deepseek-v4-flash` 等 | OpenCodex `127.0.0.1:10100` | DeepSeek / MiMo / Gemini / Claude / Cursor-Grok / Composer（共 10 个） |
-| `opencodex/cursor-grok-4.5-*` | OpenCodex `127.0.0.1:10100` | Cursor Grok 4.5 High/Medium/Low |
+| `opencodex/deepseek-v4-flash` 等 | OpenCodex `127.0.0.1:10100` | DeepSeek / MiMo / Gemini / Claude / Cursor-Grok / Kimi（共 13 个） |
+| `opencodex/cursor-grok-4.6-*` | OpenCodex `127.0.0.1:10100` | Cursor Grok 4.6 Low/Medium/High/XHigh |
+| `opencodex/kimi-k3-*` | OpenCodex `127.0.0.1:10100` | Kimi K3 Low/High/Max |
 | 默认 | `defaultModel` | 现为 `deepseek-v4-flash` |
 
 ---
@@ -246,7 +248,7 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh re
 
 - 只影响该 bot 的 `buildHeadlessSessionConfig` 过滤与默认选择  
 - 不改变其他 bot 的 `/model` 列表装配  
-- 例：SecondaryBot 仅 `opencodex/cursor-grok-4.5-low`；Headless 仍十模型
+- 例：SecondaryBot 仅 `opencodex/cursor-grok-4.6-low`；Headless 仍为 13 模型
 
 改后 `headless-daemon.sh restart`。
 

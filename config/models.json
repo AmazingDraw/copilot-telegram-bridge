@@ -16,10 +16,13 @@
     "mimo-v2.5-pro",
     "gemini-3.6-flash-high",
     "claude-sonnet-4-6",
-    "cursor-grok-4.5-high",
-    "cursor-grok-4.5-medium",
-    "cursor-grok-4.5-low",
-    "composer-2.5"
+    "cursor-grok-4.6-low",
+    "cursor-grok-4.6-medium",
+    "cursor-grok-4.6-high",
+    "cursor-grok-4.6-xhigh",
+    "kimi-k3-low",
+    "kimi-k3-high",
+    "kimi-k3-max"
   ],
   "officialFallback": "mai-code-1-flash",
   "paths": {
@@ -34,7 +37,7 @@
   "launchAgentLabel": "com.copilot-telegram-bridge",
   "providers": [
     {
-      "$comment": "OpenCodex 10100：当前默认第三方上游，10 个模型全走这里。整组 enabled=false 可一键关闭；单个模型 enabled=false 单独关闭。",
+      "$comment": "OpenCodex 10100：当前默认第三方上游，13 个模型全走这里。整组 enabled=false 可一键关闭；单个模型 enabled=false 单独关闭。",
       "id": "opencodex",
       "enabled": true,
       "type": "openai",
@@ -90,31 +93,52 @@
           "maxOutputTokens": 16384
         },
         {
-          "id": "cursor-grok-4.5-high",
+          "id": "cursor-grok-4.6-low",
           "enabled": true,
           "maxPromptTokens": 256000,
           "maxContextWindowTokens": 256000,
           "maxOutputTokens": 32000
         },
         {
-          "id": "cursor-grok-4.5-medium",
+          "id": "cursor-grok-4.6-medium",
           "enabled": true,
           "maxPromptTokens": 256000,
           "maxContextWindowTokens": 256000,
           "maxOutputTokens": 32000
         },
         {
-          "id": "cursor-grok-4.5-low",
+          "id": "cursor-grok-4.6-high",
           "enabled": true,
           "maxPromptTokens": 256000,
           "maxContextWindowTokens": 256000,
           "maxOutputTokens": 32000
         },
         {
-          "id": "composer-2.5",
+          "id": "cursor-grok-4.6-xhigh",
           "enabled": true,
-          "maxPromptTokens": 200000,
-          "maxContextWindowTokens": 200000,
+          "maxPromptTokens": 256000,
+          "maxContextWindowTokens": 256000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "kimi-k3-low",
+          "enabled": true,
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "kimi-k3-high",
+          "enabled": true,
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "kimi-k3-max",
+          "enabled": true,
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
           "maxOutputTokens": 32000
         }
       ]
@@ -161,7 +185,7 @@
       ]
     },
     {
-      "$comment": "[回滚开关] cliproxy 8317：原 gemini/claude/cursor-grok/composer 上游。要回滚：把本组 enabled=true 并把 opencodex 组 enabled=false。",
+      "$comment": "[回滚开关] cliproxy 8317：原 gemini/claude/cursor-grok/kimi 上游。要回滚：把本组 enabled=true 并把 opencodex 组 enabled=false。",
       "id": "cliproxy",
       "enabled": false,
       "type": "openai",
@@ -190,27 +214,45 @@
           "maxOutputTokens": 16384
         },
         {
-          "id": "cursor-grok-4.5-high",
+          "id": "cursor-grok-4.6-low",
           "maxPromptTokens": 256000,
           "maxContextWindowTokens": 256000,
           "maxOutputTokens": 32000
         },
         {
-          "id": "cursor-grok-4.5-medium",
+          "id": "cursor-grok-4.6-medium",
           "maxPromptTokens": 256000,
           "maxContextWindowTokens": 256000,
           "maxOutputTokens": 32000
         },
         {
-          "id": "cursor-grok-4.5-low",
+          "id": "cursor-grok-4.6-high",
           "maxPromptTokens": 256000,
           "maxContextWindowTokens": 256000,
           "maxOutputTokens": 32000
         },
         {
-          "id": "composer-2.5",
-          "maxPromptTokens": 200000,
-          "maxContextWindowTokens": 200000,
+          "id": "cursor-grok-4.6-xhigh",
+          "maxPromptTokens": 256000,
+          "maxContextWindowTokens": 256000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "kimi-k3-low",
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "kimi-k3-high",
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
+          "maxOutputTokens": 32000
+        },
+        {
+          "id": "kimi-k3-max",
+          "maxPromptTokens": 1000000,
+          "maxContextWindowTokens": 1000000,
           "maxOutputTokens": 32000
         }
       ]
