@@ -189,13 +189,13 @@ tail -20 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log 
 
 - 已配置模型（写了 `maxContextWindowTokens` / `maxPromptTokens`）→ 用配置值。
 - 未配置模型 → `/status` 显示默认 200K。
-- **实际修复上下文**（写进 Copilot 桌面 `data.db`）走 **`/fixctx`** 命令（`scripts/fix-model-tokens.sh` 的硬编码表，独立于 models.json）。
+- **实际修复上下文**走 **`/fixctx`**：同时更新 Copilot 桌面 `data.db`、OpenCodex `modelContextWindows`，并重启 OpenCodex 同步 catalog。
 
 > **⚠️ `/fixctx` 硬编码表同步（唯一例外）**
-> 新增一个模型并想用 `/fixctx` 修复它的桌面上下文时，除了改 `models.json`，**还要**在
+> 新增一个模型并想用 `/fixctx` 修复桌面与 OpenCodex 上下文时，除了改 `models.json`，**还要**在
 > `scripts/fix-model-tokens.sh` 的 `MODELS=()` 表里加一行
-> `"<model_id>|<max_prompt_tokens>|<max_output_tokens>|<显示名>"`。
-> 这个表是 bash 硬编码，不读 `models.json`；两者不同步会导致「json 配了上下文，但 /fixctx 不修它」。
+> `"<model_id>|<Copilot prompt>|<Copilot output>|<OpenCodex context>|<显示名>"`。
+> Copilot 与 OpenCodex 可写不同窗口值（如十进制 1M 与 1048576）；该表不读 `models.json`，必须同步维护。
 > 其余场景（改默认 / 排序 / 禁用 / 官方开关 / 换上游）**只改 models.json 即可**。
 
 ---
@@ -369,7 +369,7 @@ telegram-bridge: headless BYOK config ... model=opencodex/<default> providers=op
 │   → providers[].models[].maxContextWindowTokens
 ├── 加新模型
 │   → providers[].models[] 追加对象
-│   + 若需 /fixctx 修桌面上下文 → 同步 scripts/fix-model-tokens.sh 的 MODELS=() 表
+│   + 若需 /fixctx 修桌面/OpenCodex 上下文 → 同步 scripts/fix-model-tokens.sh 的 MODELS=() 表
 └── 删模型
     → providers[].models[] 删条目 + 清理顶层引用 + 清理 bots.json 引用 + 清理 fix-model-tokens.sh 表
 ```

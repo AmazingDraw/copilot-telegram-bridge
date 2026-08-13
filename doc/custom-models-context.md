@@ -339,3 +339,4 @@ curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8317/v1/models
 | 2026-07-18 | 桌面+无头补齐 `gemini-3.5-flash-low`（1M / 65K output）。 |
 | 2026-08-01 | DeepSeek 思考强度：cliproxy 别名 `deepseek-v4-{flash,pro}-{low,high,max}` + `payload.override` 注入；桌面挂到 cliproxy provider；无头 `/thinking` 切模型后缀。 |
 | 2026-08-11 | 模型规则 JSON 化：`/model` 显示抽到 `models.json` 的 `display` 块（精确官方白名单 / nameDedup / unknownBareId）；主路径按 provider/model `enabled` 过滤；去掉隐藏 grok 与 Sonnet 5 硬编码。默认 provider 改为 **opencodex(10100)**，10 个模型；`officialFallback` 改为免费 **mai-code-1-flash**；未配置模型上下文兜底 **200K**（`/fixctx` 硬编码表独立维护）。 |
+| 2026-08-14 | `/fixctx` 扩展为同时修复 Copilot `data.db` 与 OpenCodex `modelContextWindows`，自动启用 Kimi K3 Max、重启代理并同步 catalog。 |

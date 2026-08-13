@@ -123,7 +123,7 @@ start:
 | `/mode` | Interactive / Plan / Autopilot |
 | `/rename` | 改会话名（写 `workspace.yaml` 等） |
 | `/clean` | 空壳数量 + 一键直删；真会话最多 **15** 条点号删（二次确认，不显示 id） |
-| `/fixctx` | 修复桌面自定义模型上下文窗口 |
+| `/fixctx` | 修复 Copilot 桌面与 OpenCodex 模型上下文并同步 catalog |
 | `/status` | 当前模型 / 模式 / 会话 / 表格投递方式 |
 | `/rich` | 表格富文本开/关（**默认关**＝列表 HTML；开＝`sendRichMessage` 表） |
 | `/reboot` | **仅 Editor 菜单**：重启无头 daemon（🧿） |
