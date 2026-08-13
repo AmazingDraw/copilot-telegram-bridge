@@ -1,6 +1,10 @@
 {
-  "$comment": "无头 BYOK 模型与路径。改完后: bash scripts/headless-daemon.sh restart。密钥不写这里，走 env / apiKeyFromFile / cliproxy yaml。可用 ${HOME}。覆盖路径: env HEADLESS_MODELS_CONFIG。models 支持 string 或 {id,enabled,maxPromptTokens,maxContextWindowTokens,maxOutputTokens}；enabled 缺省 true。注意：本文件与桌面 App 的 ~/.copilot/data.db 无关，两边要分别改。",
-  "defaultModel": "deepseek-v4-flash",
+  "$comment": "Bridge 模型单一真源。模型规格只写入 catalog；Headless、回滚 provider、/fixctx 与单 Bot 策略通过 modelSets 引用。改完后运行 bash scripts/headless-daemon.sh restart。密钥不写这里，走 env / apiKeyFromFile / cliproxy yaml。覆盖路径：HEADLESS_MODELS_CONFIG；/fixctx 覆盖路径：FIXCTX_MODELS_CONFIG。",
+  "schemaVersion": 2,
+  "officialFallback": "mai-code-1-flash",
+  "defaults": {
+    "maxContextWindowTokens": 200000
+  },
   "display": {
     "officialModels": {
       "enabled": true,
@@ -9,22 +13,6 @@
     "nameDedup": "suffix-provider",
     "unknownBareId": "hide"
   },
-  "preferredOrder": [
-    "deepseek-v4-flash",
-    "deepseek-v4-pro",
-    "mimo-v2.5",
-    "mimo-v2.5-pro",
-    "gemini-3.6-flash-high",
-    "claude-sonnet-4-6",
-    "cursor-grok-4.6-low",
-    "cursor-grok-4.6-medium",
-    "cursor-grok-4.6-high",
-    "cursor-grok-4.6-xhigh",
-    "kimi-k3-low",
-    "kimi-k3-high",
-    "kimi-k3-max"
-  ],
-  "officialFallback": "mai-code-1-flash",
   "paths": {
     "cliproxyConfig": "${HOME}/.cli-proxy-api/config.yaml",
     "agentsMd": "../agent-memory/AGENTS.md",
@@ -35,9 +23,242 @@
     "codexStateDir": "/tmp/cu-card/codex"
   },
   "launchAgentLabel": "com.copilot-telegram-bridge",
+  "catalog": {
+    "deepseek-v4-flash": {
+      "label": "DeepSeek V4 Flash",
+      "maxPromptTokens": 1000000,
+      "maxContextWindowTokens": 1000000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 1048576
+      }
+    },
+    "deepseek-v4-pro": {
+      "label": "DeepSeek V4 Pro",
+      "maxPromptTokens": 1000000,
+      "maxContextWindowTokens": 1000000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 1048576
+      }
+    },
+    "mimo-v2.5": {
+      "label": "MiMo V2.5",
+      "maxPromptTokens": 1000000,
+      "maxContextWindowTokens": 1000000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 1050000
+      }
+    },
+    "mimo-v2.5-pro": {
+      "label": "MiMo V2.5 Pro",
+      "maxPromptTokens": 1000000,
+      "maxContextWindowTokens": 1000000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 1050000
+      }
+    },
+    "gemini-3.6-flash-high": {
+      "label": "Gemini 3.6 Flash High",
+      "maxPromptTokens": 1000000,
+      "maxContextWindowTokens": 1000000,
+      "maxOutputTokens": 65536,
+      "fixctx": {
+        "opencodexContextWindow": 1048576
+      }
+    },
+    "claude-sonnet-4-6": {
+      "label": "Claude Sonnet 4.6",
+      "maxPromptTokens": 200000,
+      "maxContextWindowTokens": 200000,
+      "maxOutputTokens": 16384,
+      "fixctx": {
+        "opencodexContextWindow": 200000
+      }
+    },
+    "cursor-grok-4.6-low": {
+      "label": "Cursor Grok 4.6 Low",
+      "maxPromptTokens": 256000,
+      "maxContextWindowTokens": 256000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 256000
+      }
+    },
+    "cursor-grok-4.6-medium": {
+      "label": "Cursor Grok 4.6 Medium",
+      "maxPromptTokens": 256000,
+      "maxContextWindowTokens": 256000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 256000
+      }
+    },
+    "cursor-grok-4.6-high": {
+      "label": "Cursor Grok 4.6 High",
+      "maxPromptTokens": 256000,
+      "maxContextWindowTokens": 256000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 256000
+      }
+    },
+    "cursor-grok-4.6-xhigh": {
+      "label": "Cursor Grok 4.6 XHigh",
+      "maxPromptTokens": 256000,
+      "maxContextWindowTokens": 256000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 256000
+      }
+    },
+    "kimi-k3-low": {
+      "label": "Kimi K3 Low",
+      "maxPromptTokens": 1000000,
+      "maxContextWindowTokens": 1000000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 1048576
+      }
+    },
+    "kimi-k3-high": {
+      "label": "Kimi K3 High",
+      "maxPromptTokens": 1000000,
+      "maxContextWindowTokens": 1000000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 1048576
+      }
+    },
+    "kimi-k3-max": {
+      "label": "Kimi K3 Max",
+      "maxPromptTokens": 1000000,
+      "maxContextWindowTokens": 1000000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 1048576,
+        "ensureEnabled": true
+      }
+    },
+    "cursor-grok-4.5-high": {
+      "label": "Cursor Grok 4.5 High",
+      "maxPromptTokens": 256000,
+      "maxContextWindowTokens": 256000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 256000
+      }
+    },
+    "cursor-grok-4.5-medium": {
+      "label": "Cursor Grok 4.5 Medium",
+      "maxPromptTokens": 256000,
+      "maxContextWindowTokens": 256000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 256000
+      }
+    },
+    "cursor-grok-4.5-low": {
+      "label": "Cursor Grok 4.5 Low",
+      "maxPromptTokens": 256000,
+      "maxContextWindowTokens": 256000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 256000
+      }
+    },
+    "composer-2.5": {
+      "label": "Composer 2.5",
+      "maxPromptTokens": 200000,
+      "maxContextWindowTokens": 200000,
+      "maxOutputTokens": 32000,
+      "fixctx": {
+        "opencodexContextWindow": 200000
+      }
+    }
+  },
+  "modelSets": {
+    "headless": {
+      "$comment": "Headless 主 Bot 的有序模型列表；顺序同时用于 /model 与默认选择。",
+      "defaultModel": "deepseek-v4-flash",
+      "models": [
+        "deepseek-v4-flash",
+        "deepseek-v4-pro",
+        "mimo-v2.5",
+        "mimo-v2.5-pro",
+        "gemini-3.6-flash-high",
+        "claude-sonnet-4-6",
+        "cursor-grok-4.6-low",
+        "cursor-grok-4.6-medium",
+        "cursor-grok-4.6-high",
+        "cursor-grok-4.6-xhigh",
+        "kimi-k3-low",
+        "kimi-k3-high",
+        "kimi-k3-max"
+      ]
+    },
+    "rollback-opencode": {
+      "models": [
+        "deepseek-v4-flash",
+        "deepseek-v4-pro",
+        "mimo-v2.5",
+        "mimo-v2.5-pro"
+      ]
+    },
+    "rollback-cliproxy": {
+      "models": [
+        "gemini-3.6-flash-high",
+        "claude-sonnet-4-6",
+        "cursor-grok-4.6-low",
+        "cursor-grok-4.6-medium",
+        "cursor-grok-4.6-high",
+        "cursor-grok-4.6-xhigh",
+        "kimi-k3-low",
+        "kimi-k3-high",
+        "kimi-k3-max"
+      ]
+    },
+    "rollback-deepseek": {
+      "models": [
+        "deepseek-v4-flash",
+        "deepseek-v4-pro"
+      ]
+    },
+    "fixctx": {
+      "$comment": "Copilot data.db 与 OpenCodex modelContextWindows 的修复目标。",
+      "models": [
+        "cursor-grok-4.5-high",
+        "cursor-grok-4.5-medium",
+        "cursor-grok-4.5-low",
+        "cursor-grok-4.6-low",
+        "cursor-grok-4.6-medium",
+        "cursor-grok-4.6-high",
+        "cursor-grok-4.6-xhigh",
+        "composer-2.5",
+        "deepseek-v4-flash",
+        "deepseek-v4-pro",
+        "mimo-v2.5",
+        "mimo-v2.5-pro",
+        "kimi-k3-low",
+        "kimi-k3-high",
+        "kimi-k3-max",
+        "claude-sonnet-4-6",
+        "gemini-3.6-flash-high"
+      ]
+    },
+    "prompt-reverse": {
+      "$comment": "SecondaryBot 专用单模型策略。",
+      "defaultModel": "cursor-grok-4.6-low",
+      "models": [
+        "cursor-grok-4.6-low"
+      ]
+    }
+  },
   "providers": [
     {
-      "$comment": "OpenCodex 10100：当前默认第三方上游，13 个模型全走这里。整组 enabled=false 可一键关闭；单个模型 enabled=false 单独关闭。",
+      "$comment": "OpenCodex 10100：当前默认第三方上游。",
       "id": "opencodex",
       "enabled": true,
       "type": "openai",
@@ -49,102 +270,10 @@
         "OPENCODEX_API_KEY"
       ],
       "apiKeyFromFile": "${HOME}/.opencodex/admin-api-token",
-      "models": [
-        {
-          "id": "deepseek-v4-flash",
-          "enabled": true,
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "deepseek-v4-pro",
-          "enabled": true,
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "mimo-v2.5",
-          "enabled": true,
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "mimo-v2.5-pro",
-          "enabled": true,
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "gemini-3.6-flash-high",
-          "enabled": true,
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 65536
-        },
-        {
-          "id": "claude-sonnet-4-6",
-          "enabled": true,
-          "maxPromptTokens": 200000,
-          "maxContextWindowTokens": 200000,
-          "maxOutputTokens": 16384
-        },
-        {
-          "id": "cursor-grok-4.6-low",
-          "enabled": true,
-          "maxPromptTokens": 256000,
-          "maxContextWindowTokens": 256000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "cursor-grok-4.6-medium",
-          "enabled": true,
-          "maxPromptTokens": 256000,
-          "maxContextWindowTokens": 256000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "cursor-grok-4.6-high",
-          "enabled": true,
-          "maxPromptTokens": 256000,
-          "maxContextWindowTokens": 256000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "cursor-grok-4.6-xhigh",
-          "enabled": true,
-          "maxPromptTokens": 256000,
-          "maxContextWindowTokens": 256000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "kimi-k3-low",
-          "enabled": true,
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "kimi-k3-high",
-          "enabled": true,
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "kimi-k3-max",
-          "enabled": true,
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        }
-      ]
+      "modelSet": "headless"
     },
     {
-      "$comment": "[回滚开关] OpenCode：原 mimo + DeepSeek 上游。要回滚：把本组 enabled=true 并把 opencodex 组 enabled=false。",
+      "$comment": "[回滚开关] OpenCode：把本组 enabled=true 并把 opencodex 组 enabled=false。",
       "id": "opencode",
       "enabled": false,
       "type": "openai",
@@ -157,35 +286,10 @@
         "OPENCODE_API_KEY",
         "OPENCODE_GO_API_KEY"
       ],
-      "models": [
-        {
-          "id": "deepseek-v4-flash",
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "deepseek-v4-pro",
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "mimo-v2.5",
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "mimo-v2.5-pro",
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        }
-      ]
+      "modelSet": "rollback-opencode"
     },
     {
-      "$comment": "[回滚开关] cliproxy 8317：原 gemini/claude/cursor-grok/kimi 上游。要回滚：把本组 enabled=true 并把 opencodex 组 enabled=false。",
+      "$comment": "[回滚开关] cliproxy 8317：把本组 enabled=true 并把 opencodex 组 enabled=false。",
       "id": "cliproxy",
       "enabled": false,
       "type": "openai",
@@ -200,65 +304,10 @@
       ],
       "apiKeyFromCliproxyYaml": true,
       "portFromCliproxyYaml": true,
-      "models": [
-        {
-          "id": "gemini-3.6-flash-high",
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 65536
-        },
-        {
-          "id": "claude-sonnet-4-6",
-          "maxPromptTokens": 200000,
-          "maxContextWindowTokens": 200000,
-          "maxOutputTokens": 16384
-        },
-        {
-          "id": "cursor-grok-4.6-low",
-          "maxPromptTokens": 256000,
-          "maxContextWindowTokens": 256000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "cursor-grok-4.6-medium",
-          "maxPromptTokens": 256000,
-          "maxContextWindowTokens": 256000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "cursor-grok-4.6-high",
-          "maxPromptTokens": 256000,
-          "maxContextWindowTokens": 256000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "cursor-grok-4.6-xhigh",
-          "maxPromptTokens": 256000,
-          "maxContextWindowTokens": 256000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "kimi-k3-low",
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "kimi-k3-high",
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "kimi-k3-max",
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        }
-      ]
+      "modelSet": "rollback-cliproxy"
     },
     {
-      "$comment": "官方直连 DeepSeek API：保留为紧急回退。默认 enabled=false。",
+      "$comment": "官方直连 DeepSeek API：默认 enabled=false，仅作紧急回退。",
       "id": "deepseek",
       "enabled": false,
       "type": "openai",
@@ -269,20 +318,7 @@
       "apiKeyEnv": [
         "DEEPSEEK_API_KEY"
       ],
-      "models": [
-        {
-          "id": "deepseek-v4-flash",
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        },
-        {
-          "id": "deepseek-v4-pro",
-          "maxPromptTokens": 1000000,
-          "maxContextWindowTokens": 1000000,
-          "maxOutputTokens": 32000
-        }
-      ]
+      "modelSet": "rollback-deepseek"
     }
   ]
 }

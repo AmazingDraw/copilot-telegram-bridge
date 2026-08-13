@@ -162,19 +162,17 @@
 
 ## 6. 会话与 BYOK 数据面
 
-1. Headless 用 SDK **createSession / resumeSession**（非桌面 editor 会话直连）  
-2. 模型 **多源 BYOK**（真源 **`config/models.json`**，密钥不进文件）：  
-   - **OpenCodex 10100**（`apiKeyFromFile: ~/.opencodex/admin-api-token`，默认启用）→ `deepseek-v4-{flash,pro}`、`mimo-v2.5(-pro)`、`gemini-3.6-flash-high`、`claude-sonnet-4-6`、`cursor-grok-4.6-{low,medium,high,xhigh}`、`kimi-k3-{low,high,max}` 共 13 个第三方模型，**模型 id 不变**
-   - **OpenCode Go**（`OPENCODE_API_KEY`，整组 `enabled: false` 作回滚开关）→ `deepseek-v4-{flash,pro}`、`mimo-v2.5(-pro)`
-   - **本地 CLI Proxy 8317**（整组 `enabled: false` 作回滚开关）→ `gemini-*`、`cursor-grok-*`、`kimi-*`
-   - **DeepSeek 官方**（默认 `enabled: false`）→ `deepseek/deepseek-v4-flash`、`deepseek/deepseek-v4-pro`  
-   - **模型级开关**：`models.json` 中每个模型条目可显式 `"enabled": false` 单独下线；provider 级 `enabled: false` 整组关闭  
-3. 默认：`defaultModel`（现 `deepseek-v4-flash`）→ 会话 id `opencodex/<id>`  
-4. Key/URL：`loadShellEnvForByok()` 读 bash 的 `DEEPSEEK_*` / `OPENCODE_*` / `COPILOT_*` / `CLIPROXY_*`；`paths.cliproxyConfig` 可用 `${HOME}`；`paths.agentsMd` 默认 `../agent-memory/AGENTS.md`（与 join 共用；也可用 `${EXTENSIONS}` / `${BRIDGE_ROOT}`）  
-5. 改模型：只编辑 `config/models.json` 后 `bash scripts/headless-daemon.sh restart`（或 env `HEADLESS_MODELS_CONFIG`）  
-6. **上下文窗口**：在 `models.json` 里为每个模型写 `maxPromptTokens` / `maxContextWindowTokens` / `maxOutputTokens`（SDK 自定义模型默认 128K）。**不读**桌面 `~/.copilot/data.db`。详见 [`custom-models-context.md`](./custom-models-context.md)。  
-7. **用户 MCP**：create/resume 显式加载 `paths.mcpConfig`（默认 `~/.copilot/mcp-config.json`）→ `SessionConfig.mcpServers`。详见 §14。  
-8. **per-bot 模型/MCP**：`bots.json` 可写 `defaultModel` / `allowedModels` / `loadMcp` / `mcpServerNames`（见 [`prompt-reverse-bot.md`](./prompt-reverse-bot.md)）。  
+1. Headless 用 SDK **createSession / resumeSession**（非桌面 editor 会话直连）。
+2. 模型唯一真源是 **`config/models.json`**：
+   - `catalog` 唯一保存模型窗口与 `/fixctx` 规格。
+   - `modelSets.headless` 决定主 Bot 列表、排序与默认模型。
+   - 回滚 provider 与单 Bot 只引用各自 `modelSet`，不复制模型对象。
+   - `providers[].enabled` 控制上游切换；同一时刻建议只启用一个第三方 provider。
+3. Key/URL：`loadShellEnvForByok()` 读 bash 的 `DEEPSEEK_*` / `OPENCODE_*` / `COPILOT_*` / `CLIPROXY_*`；`paths.cliproxyConfig` 可用 `${HOME}`；`paths.agentsMd` 默认 `../agent-memory/AGENTS.md`（与 join 共用；也可用 `${EXTENSIONS}` / `${BRIDGE_ROOT}`）。
+4. 改模型：只编辑 `config/models.json`，先运行 `node scripts/check-model-config.mjs --live`，再执行 `bash scripts/headless-daemon.sh restart`。
+5. **上下文窗口**：Headless 读取 `catalog.<id>.max*Tokens`；桌面 SQLite 与 OpenCodex 配置由 `/fixctx` 从 `modelSets.fixctx` 应用。详见 [`custom-models-context.md`](./custom-models-context.md)。
+6. **用户 MCP**：create/resume 显式加载 `paths.mcpConfig`（默认 `~/.copilot/mcp-config.json`）→ `SessionConfig.mcpServers`。详见 §14。
+7. **per-bot 模型/MCP**：`bots.json` 推荐写 `modelSet` / `loadMcp` / `mcpServerNames`；旧 `defaultModel` / `allowedModels` 仍兼容（见 [`prompt-reverse-bot.md`](./prompt-reverse-bot.md)）。
 
 **锁文件**：`bots/<Name>/lock.json` —— 标记该 bot 当前占用 session；他会话持锁时 auto-connect 会停手，避免双连。
 
