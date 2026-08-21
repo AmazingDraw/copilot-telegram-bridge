@@ -172,7 +172,7 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 | :--- | :--- | :--- |
 | 💬 新建对话 | `codex:new` | 进入新对话输入态，直接执行 |
 | 🎛 切换模型 | `codex:model` | 列出可用模型（3 列）；**仅当前对话生效**，退出模式恢复默认 |
-| 📂 继续对话 | `codex:resume` | 历史会话列表（去重、序号 ①-⑩、视觉等宽对齐、时间 `[MM-DD HH:MM]`） |
+| 📂 继续对话 | `codex:resume` | 历史会话列表（智能意图标题、按实际时间排序、去重、序号 ①-⑩ 视觉等宽对齐） |
 | 📊 查看进度 | `codex:progress` | 最近 10 条任务状态（含错误原因）；存储自动裁剪至 50 条 |
 | 🖥 关闭桌面 | `codex:desktop` | 检测/关闭 ChatGPT 桌面端（CLI 需桌面关闭才能正常响应） |
 | 🚪 退出桥接 | `codex:exit` | 退出连续对话，恢复默认模型 |
