@@ -2,8 +2,8 @@
 
 将 **GitHub Copilot CLI / App 会话** 与 **Telegram Bot** 双向桥接：手机发消息 → 本机 agent 执行 → 回复、工具气泡、权限确认与 `ask_user` 回落到 Telegram。
 
-> 本机路径：`~/.copilot/extensions/copilot-telegram-bridge`
-> 远端同步：`AmazingDraw/copilot-telegram-bridge`（`bash ~/.copilot/extensions/sync-copilot-extensions.sh "说明"`）
+> 本机路径：`~/.copilot/extensions/copilot-telegram-bridge`  
+> 远端仓库：`AmazingDraw/copilot-telegram-bridge`
 
 ---
 
@@ -19,7 +19,7 @@
 | :--- | :--- | :--- |
 | `Copilot` | **桌面 / 编辑器** | `joinSession`，挂在当前 App 会话；模型列表 = 桌面会话自带，**不读** `config/models.json` |
 | `Headless` | **无头主 bot** | `createSession` / `resumeSession`；BYOK + 用户 MCP；allow-all |
-| `SecondaryBot` | **专用无头** | 提示词反推；open-group / deny-all / `modelSet: prompt-reverse`；见 [`prompt-reverse-bot.md`](doc/prompt-reverse-bot.md) |
+| `SecondaryBot` | **专用无头** | 专用单模型策略；open-group / deny-all / `modelSet: prompt-reverse`；见 [`prompt-reverse-bot.md`](doc/prompt-reverse-bot.md) |
 
 - 注册表：`config/bots.json`（token 明文、**不进 Git**）
 - 每 bot 独立目录：`bots/<Name>/`（lock / state / leader）
@@ -161,7 +161,7 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 
 ### Codex 子命令（/codex）
 
-通过 Telegram 控制 **Codex CLI**（本地 `~/.codex`），支持新对话、续对话、进度、模型切换。
+通过 Telegram 控制 **Codex CLI**（本地 `~/.codex`），支持新对话、续对话、进度、模型切换与异常智能诊断。
 
 ```bash
 /codex                    # 打开子命令菜单
@@ -173,16 +173,17 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 | 💬 新建对话 | `codex:new` | 进入新对话输入态，直接执行 |
 | 🎛 切换模型 | `codex:model` | 列出可用模型（3 列）；**仅当前对话生效**，退出模式恢复默认 |
 | 📂 继续对话 | `codex:resume` | 历史会话列表（去重、序号 ①-⑩、视觉等宽对齐、时间 `[MM-DD HH:MM]`） |
-| 📊 查看进度 | `codex:progress` | 最近 10 条任务状态；存储自动裁剪至 50 条 |
+| 📊 查看进度 | `codex:progress` | 最近 10 条任务状态（含错误原因）；存储自动裁剪至 50 条 |
 | 🖥 关闭桌面 | `codex:desktop` | 检测/关闭 ChatGPT 桌面端（CLI 需桌面关闭才能正常响应） |
 | 🚪 退出桥接 | `codex:exit` | 退出连续对话，恢复默认模型 |
 
 **关键设计**：
 
+- **智能错误诊断与中断保护**：自动清洗 `stderr` 提取真实报错（429 限流 / 401 凭据 / 50x 网关 / 上下文超限 / 桌面端锁冲突 / OOM exit=137 等）并附带排查建议；模型意外中断时**保留已生成正文**并追加中断说明，告别模糊报错
 - **桌面端检测**：新建/续接对话前检测 ChatGPT 桌面端是否运行，开着 → 提示先关闭（附「🖥 关闭桌面」按钮）；`codex:desktop` 内置实现 kill 桌面进程（不等外部脚本）
 - **指令排队**：同一会话有 running 任务时，新指令**入队不丢弃**，任务结束后自动执行下一条（FIFO）；排队提示附「✋ 停止任务 / 🗑 取消排队」按钮
 - **停止/取消**：`codex:stop` 对运行中任务 SIGTERM（5s 兜底 SIGKILL）标记 cancelled；`codex:cancelqueued` 清空排队指令
-- **模型切换**：`ctx.codexModel` 存于运行时（不写 `~/.codex/config.toml`），发任务时注入 `codex exec -m <model>`；模型列表来自 `~/.codex/opencodex-catalog.json`，**排除 `~/.opencodex/config.json` 的 `disabledModels`**（当前 16 个可用）
+- **模型切换**：`ctx.codexModel` 存于运行时（不写 `~/.codex/config.toml`），发任务时注入 `codex exec -m <model>`；模型列表来自 `~/.codex/opencodex-catalog.json`，**排除 `~/.opencodex/config.json` 的 `disabledModels`**
 - **发图**：Codex 模式下直接发图片/文档 → `handleFileAttachment` 下载落盘 → `codex exec -i <path>`；无 caption 用默认提示词「请分析这张图片。」
 - **防卡后缀**：prompt 不再追加「任务完成后…」提示词（会污染历史标题）
 - **会话去重**：历史列表按 `session_meta.payload.session_id`（纯 UUID）去重；`codex exec resume` 必须用纯 UUID，文件名带时间戳前缀会被当新会话
@@ -212,7 +213,7 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 
 ---
 
-## 安装与配置（本机）
+## 安装与配置
 
 已作为 **用户扩展** 落在 `~/.copilot/extensions/copilot-telegram-bridge/`。
 
@@ -256,9 +257,6 @@ Token 泄漏：BotFather `/revoke` → 本地 `setup` 重写。
 # 语法检查
 node --check extension.mjs
 node --check lib/*.mjs
-
-# 推远端
-bash ~/.copilot/extensions/sync-copilot-extensions.sh "中文说明"
 ```
 
 热更：宿主支持时 `extensions_reload`，或重启承载会话 / App。
@@ -292,4 +290,4 @@ bash ~/.copilot/extensions/sync-copilot-extensions.sh "中文说明"
 
 ## License
 
-MIT。上游 plugin 元数据仍可能指向 examon / 官方示例仓库；**本机维护与同步以 `AmazingDraw/copilot-telegram-bridge` 为准**。
+MIT。维护与同步以 `AmazingDraw/copilot-telegram-bridge` 为准。
