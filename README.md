@@ -19,12 +19,12 @@
 | :--- | :--- | :--- |
 | `Copilot` | **桌面 / 编辑器** | `joinSession`，挂在当前 App 会话；模型列表 = 桌面会话自带，**不读** `config/models.json` |
 | `Headless` | **无头主 bot** | `createSession` / `resumeSession`；BYOK + 用户 MCP；allow-all |
-| `SecondaryBot` | **专用无头** | 专用单模型策略；open-group / deny-all / `modelSet: prompt-reverse`；见 [`prompt-reverse-bot.md`](doc/prompt-reverse-bot.md) |
+| `SecondaryBot` | **专用无头** | 专用单模型策略；open-group / deny-all |
 
 - 注册表：`config/bots.json`（token 明文、**不进 Git**）
 - 每 bot 独立目录：`bots/<Name>/`（lock / state / leader）
 - 角色判定：`bots.json` 的 `role`（`editor` | `headless`）优先；缺省时启用序第 1 个 = editor，其后 = headless
-- 专文：[`editor-bot.md`](doc/editor-bot.md) · [`headless-daemon.md`](doc/headless-daemon.md) · [`prompt-reverse-bot.md`](doc/prompt-reverse-bot.md) · [`models-config.md`](doc/models-config.md)
+- 专文：[`editor-bot.md`](doc/editor-bot.md) · [`headless-daemon.md`](doc/headless-daemon.md) · [`models-config.md`](doc/models-config.md)
 
 ### 模块拆分
 
@@ -45,7 +45,7 @@ lib/
   bot-handlers.mjs     # session 事件 → TG；permission / ask_user 工厂
   bot-commands.mjs     # /session /clean /model /mode 与 callback
 config/models.json     # 模型唯一真源：catalog / modelSets / provider / fixctx
-../agent-memory/       # 人设真源：AGENTS.md / prompt-reverse.md
+../agent-memory/       # 人设真源：AGENTS.md
 ```
 
 ### 装配顺序（每个 Bot 实例）
@@ -133,7 +133,7 @@ createBotInstance(name, token, isHeadless)
 
 - 真源：`~/.copilot/mcp-config.json`（或 `models.json` → `paths.mcpConfig`）
 - create/resume 写入 `SessionConfig.mcpServers`
-- 默认：**Headless 加载**；**deny-all / prompt-reverse 不加载**（`loadMcp` 可覆盖）
+- 默认：**Headless 加载**；**deny-all 不加载**（`loadMcp` 可覆盖）
 
 ### 无头独立守护（推荐 · 开机自启）
 
@@ -269,22 +269,6 @@ node --check lib/*.mjs
 4. **`getRecentSessions` 只列 resumable**；切换前再校验
 5. **poll 心跳**节流（60s + 8s 超时），勿每轮堵 `model.list()`
 6. 隐藏回归：`lib` 用到的 `basename` 等必须在本模块 `import`
-
-### 变更记录
-
-- 目录：`changelog/`（按日）
-- 近期总册：[`CHANGELOG/2026-07-14_headless-byok-session-and-ops.md`](changelog/2026-07-14_headless-byok-session-and-ops.md)
-
----
-
-## 已知低风险项（暂不扩改）
-
-| 项 | 说明 |
-| :--- | :--- |
-| ask pending 时任意文本当答复 | 含 `/session` 会被吃掉；原设计 |
-| `startLockPoller` 幂等 | 已 clear 专用 id 再 start |
-| 多 chat 同 `reqId` | Map 只保留最后 `messageId` |
-| `session.send` null 护栏 | 正文/附件发送前判空 |
 
 ---
 
