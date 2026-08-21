@@ -60,6 +60,15 @@
         "opencodexContextWindow": 1050000
       }
     },
+    "gemini-3.7-flash-high": {
+      "label": "Gemini 3.7 Flash High",
+      "maxPromptTokens": 1000000,
+      "maxContextWindowTokens": 1000000,
+      "maxOutputTokens": 65536,
+      "fixctx": {
+        "opencodexContextWindow": 1048576
+      }
+    },
     "gemini-3.6-flash-high": {
       "label": "Gemini 3.6 Flash High",
       "maxPromptTokens": 1000000,
@@ -188,6 +197,7 @@
         "deepseek-v4-pro",
         "mimo-v2.5",
         "mimo-v2.5-pro",
+        "gemini-3.7-flash-high",
         "gemini-3.6-flash-high",
         "claude-sonnet-4-6",
         "cursor-grok-4.6-low",
@@ -232,6 +242,7 @@
         "kimi-k3-high",
         "kimi-k3-max",
         "claude-sonnet-4-6",
+        "gemini-3.7-flash-high",
         "gemini-3.6-flash-high"
       ]
     },
