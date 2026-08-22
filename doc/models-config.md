@@ -34,14 +34,14 @@ config/models.json
     "maxContextWindowTokens": 1000000,
     "maxOutputTokens": 32000,
     "fixctx": {
-      "opencodexContextWindow": 1048576,
       "copilotPromptTokens": 1000000,
-      "copilotOutputTokens": 32000,
-      "ensureEnabled": false
+      "copilotOutputTokens": 32000
     }
   }
 }
 ```
+
+`fixctx` 是可选的；只有 Copilot 修复值需要与 `maxPromptTokens` / `maxOutputTokens` 不同时才写。
 
 字段说明：
 
@@ -52,12 +52,8 @@ config/models.json
 | `maxPromptTokens` | Headless SDK prompt 上限，也是 Copilot 修复默认值 |
 | `maxContextWindowTokens` | Headless SDK 总窗口 |
 | `maxOutputTokens` | Headless SDK输出上限，也是 Copilot 修复默认值 |
-| `fixctx.opencodexContextWindow` | 写入 OpenCodex `modelContextWindows` 的精确值 |
 | `fixctx.copilotPromptTokens` | 可选；覆盖 Copilot prompt 修复值 |
 | `fixctx.copilotOutputTokens` | 可选；覆盖 Copilot output 修复值 |
-| `fixctx.ensureEnabled` | 从 OpenCodex `disabledModels` 移除对应 `cliproxy/<id>` |
-
-Copilot 与 OpenCodex 的窗口可以不同，例如十进制 1M 与 1048576。差异仍写在同一个模型条目中。
 
 ## 3. Model Sets
 
@@ -79,7 +75,7 @@ Copilot 与 OpenCodex 的窗口可以不同，例如十进制 1M 与 1048576。�
 
 - `headless`：主无头 Bot 列表与排序。
 - `rollback-*`：各备用 provider 的模型子集。
-- `fixctx`：桌面 SQLite 与 OpenCodex 上下文修复目标。
+- `fixctx`：Copilot 桌面 SQLite 上下文修复目标。
 - 其他命名组：供单 Bot `modelSet` 引用。
 
 同一个模型可以属于多个组，但规格只在 `catalog` 写一次。
@@ -112,7 +108,7 @@ apiKeyEnv → apiKeyFromFile → apiKeyFromCliproxyYaml
 
 1. 在 `catalog` 新增一个模型条目。
 2. 把 ID 加入需要的 `modelSets`。
-3. 如果需要 `/fixctx`，补充 `fixctx` 字段并加入 `modelSets.fixctx`。
+3. 如果需要 `/fixctx`，把 ID 加入 `modelSets.fixctx`；默认复用 `maxPromptTokens` / `maxOutputTokens`，需要不同值才写 `fixctx`。
 4. 运行：
 
 ```bash
@@ -139,7 +135,7 @@ bash scripts/headless-daemon.sh restart
 ### 5.4 修改上下文
 
 - Headless：改 `catalog.<id>.max*Tokens`，重启 daemon。
-- Copilot / OpenCodex：改同一条目的 `fixctx`，执行 `/fixctx` 或脚本。
+- Copilot 桌面：执行 `/fixctx` 或脚本；只有 Copilot 值不同才改同条目的 `fixctx`。
 
 ```bash
 bash scripts/fix-model-tokens.sh
@@ -183,7 +179,6 @@ bash scripts/headless-daemon.sh restart
 | 唯一模型真源 | `config/models.json` | 人工维护 |
 | Bot token 与 modelSet 引用 | `config/bots.json` | 本机私密配置 |
 | Copilot 模型表 | `~/.copilot/data.db` | `/fixctx` 生成/修复 |
-| OpenCodex 窗口 | `~/.opencodex/config.json` | `/fixctx` 生成/修复 |
 | Codex catalog | `~/.codex/opencodex-catalog.json` | `ocx sync` 生成 |
 
 生成产物不能反向作为 Bridge allowlist。

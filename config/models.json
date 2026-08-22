@@ -1,14 +1,17 @@
 {
   "$comment": "Bridge 模型单一真源。模型规格只写入 catalog；Headless、回滚 provider、/fixctx 与单 Bot 策略通过 modelSets 引用。改完后运行 bash scripts/headless-daemon.sh restart。密钥不写这里，走 env / apiKeyFromFile / cliproxy yaml。覆盖路径：HEADLESS_MODELS_CONFIG；/fixctx 覆盖路径：FIXCTX_MODELS_CONFIG。",
   "schemaVersion": 2,
-  "officialFallback": "mai-code-1-flash",
+  "officialFallback": "cliproxy/deepseek-v4-flash",
   "defaults": {
     "maxContextWindowTokens": 200000
   },
   "display": {
     "officialModels": {
       "enabled": true,
-      "allowIds": []
+      "allowIds": [],
+      "blockIds": [
+        "auto"
+      ]
     },
     "nameDedup": "suffix-provider",
     "unknownBareId": "hide"
@@ -28,164 +31,115 @@
       "label": "DeepSeek V4 Flash",
       "maxPromptTokens": 1000000,
       "maxContextWindowTokens": 1000000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 1048576
-      }
+      "maxOutputTokens": 32000
     },
     "deepseek-v4-pro": {
       "label": "DeepSeek V4 Pro",
       "maxPromptTokens": 1000000,
       "maxContextWindowTokens": 1000000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 1048576
-      }
+      "maxOutputTokens": 32000
     },
     "mimo-v2.5": {
       "label": "MiMo V2.5",
       "maxPromptTokens": 1000000,
       "maxContextWindowTokens": 1000000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 1050000
-      }
+      "maxOutputTokens": 32000
     },
     "mimo-v2.5-pro": {
       "label": "MiMo V2.5 Pro",
       "maxPromptTokens": 1000000,
       "maxContextWindowTokens": 1000000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 1050000
-      }
+      "maxOutputTokens": 32000
     },
     "gemini-3.7-flash-high": {
       "label": "Gemini 3.7 Flash High",
       "maxPromptTokens": 1000000,
       "maxContextWindowTokens": 1000000,
-      "maxOutputTokens": 65536,
-      "fixctx": {
-        "opencodexContextWindow": 1048576
-      }
+      "maxOutputTokens": 65536
     },
     "gemini-3.6-flash-high": {
       "label": "Gemini 3.6 Flash High",
       "maxPromptTokens": 1000000,
       "maxContextWindowTokens": 1000000,
-      "maxOutputTokens": 65536,
-      "fixctx": {
-        "opencodexContextWindow": 1048576
-      }
+      "maxOutputTokens": 65536
     },
     "claude-sonnet-4-6": {
       "label": "Claude Sonnet 4.6",
       "maxPromptTokens": 200000,
       "maxContextWindowTokens": 200000,
-      "maxOutputTokens": 16384,
-      "fixctx": {
-        "opencodexContextWindow": 200000
-      }
+      "maxOutputTokens": 16384
     },
     "cursor-grok-4.6-low": {
       "label": "Cursor Grok 4.6 Low",
       "maxPromptTokens": 256000,
       "maxContextWindowTokens": 256000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 256000
-      }
+      "maxOutputTokens": 32000
     },
     "cursor-grok-4.6-medium": {
       "label": "Cursor Grok 4.6 Medium",
       "maxPromptTokens": 256000,
       "maxContextWindowTokens": 256000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 256000
-      }
+      "maxOutputTokens": 32000
     },
     "cursor-grok-4.6-high": {
       "label": "Cursor Grok 4.6 High",
       "maxPromptTokens": 256000,
       "maxContextWindowTokens": 256000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 256000
-      }
+      "maxOutputTokens": 32000
     },
     "cursor-grok-4.6-xhigh": {
       "label": "Cursor Grok 4.6 XHigh",
       "maxPromptTokens": 256000,
       "maxContextWindowTokens": 256000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 256000
-      }
+      "maxOutputTokens": 32000
     },
     "kimi-k3-low": {
       "label": "Kimi K3 Low",
       "maxPromptTokens": 1000000,
       "maxContextWindowTokens": 1000000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 1048576
-      }
+      "maxOutputTokens": 32000
     },
     "kimi-k3-high": {
       "label": "Kimi K3 High",
       "maxPromptTokens": 1000000,
       "maxContextWindowTokens": 1000000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 1048576
-      }
+      "maxOutputTokens": 32000
     },
     "kimi-k3-max": {
       "label": "Kimi K3 Max",
       "maxPromptTokens": 1000000,
       "maxContextWindowTokens": 1000000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 1048576,
-        "ensureEnabled": true
-      }
+      "maxOutputTokens": 32000
     },
     "cursor-grok-4.5-high": {
       "label": "Cursor Grok 4.5 High",
       "maxPromptTokens": 256000,
       "maxContextWindowTokens": 256000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 256000
-      }
+      "maxOutputTokens": 32000
     },
     "cursor-grok-4.5-medium": {
       "label": "Cursor Grok 4.5 Medium",
       "maxPromptTokens": 256000,
       "maxContextWindowTokens": 256000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 256000
-      }
+      "maxOutputTokens": 32000
     },
     "cursor-grok-4.5-low": {
       "label": "Cursor Grok 4.5 Low",
       "maxPromptTokens": 256000,
       "maxContextWindowTokens": 256000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 256000
-      }
+      "maxOutputTokens": 32000
     },
     "composer-2.5": {
       "label": "Composer 2.5",
       "maxPromptTokens": 200000,
       "maxContextWindowTokens": 200000,
-      "maxOutputTokens": 32000,
-      "fixctx": {
-        "opencodexContextWindow": 200000
-      }
+      "maxOutputTokens": 32000
+    },
+    "doubao-seed": {
+      "label": "Doubao Seed",
+      "maxPromptTokens": 256000,
+      "maxContextWindowTokens": 256000,
+      "maxOutputTokens": 32000
     }
   },
   "modelSets": {
@@ -196,17 +150,13 @@
         "deepseek-v4-flash",
         "deepseek-v4-pro",
         "mimo-v2.5",
-        "mimo-v2.5-pro",
         "gemini-3.7-flash-high",
-        "gemini-3.6-flash-high",
         "claude-sonnet-4-6",
         "cursor-grok-4.6-low",
         "cursor-grok-4.6-medium",
         "cursor-grok-4.6-high",
-        "cursor-grok-4.6-xhigh",
         "kimi-k3-low",
-        "kimi-k3-high",
-        "kimi-k3-max"
+        "kimi-k3-high"
       ]
     },
     "rollback-opencode": {
@@ -224,15 +174,11 @@
       ]
     },
     "fixctx": {
-      "$comment": "Copilot data.db 与 OpenCodex modelContextWindows 的修复目标。",
+      "$comment": "Copilot data.db 的修复目标。",
       "models": [
-        "cursor-grok-4.5-high",
-        "cursor-grok-4.5-medium",
-        "cursor-grok-4.5-low",
         "cursor-grok-4.6-low",
         "cursor-grok-4.6-medium",
         "cursor-grok-4.6-high",
-        "cursor-grok-4.6-xhigh",
         "composer-2.5",
         "deepseek-v4-flash",
         "deepseek-v4-pro",
@@ -243,7 +189,8 @@
         "kimi-k3-max",
         "claude-sonnet-4-6",
         "gemini-3.7-flash-high",
-        "gemini-3.6-flash-high"
+        "gemini-3.6-flash-high",
+        "doubao-seed"
       ]
     },
     "prompt-reverse": {

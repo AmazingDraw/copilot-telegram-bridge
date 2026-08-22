@@ -119,11 +119,11 @@ start:
 | `/stop` | `session.abort`，清 typing、bubble |
 | `/session` | 最近可 resume；切换 = **handoff** |
 | `/model` | 对 **当前 join 的会话** `model.list()`（官方白名单 + 桌面 BYOK） |
-| `/thinking` | 思考等级（官方：`supportedReasoningEfforts`；DeepSeek cliproxy 别名：切 `*-low/high/max`） |
+| `/thinking` | 思考等级（`setReasoningEffort`；档位按 `model.list().supportedReasoningEfforts`） |
 | `/mode` | Interactive / Plan / Autopilot |
 | `/rename` | 改会话名（写 `workspace.yaml` 等） |
 | `/clean` | 空壳数量 + 一键直删；真会话最多 **15** 条点号删（二次确认，不显示 id） |
-| `/fixctx` | 修复 Copilot 桌面与 OpenCodex 模型上下文并同步 catalog |
+| `/fixctx` | 修复 Copilot 桌面模型上下文 |
 | `/status` | 当前模型 / 模式 / 会话 / 表格投递方式 |
 | `/rich` | 表格富文本开/关（**默认关**＝列表 HTML；开＝`sendRichMessage` 表） |
 | `/reboot` | **仅 Editor 菜单**：重启无头 daemon（🧿） |
@@ -145,7 +145,7 @@ CLI / 会话 slash（扩展侧）：
 ## 6. 日常使用清单
 
 1. 打开 GitHub Copilot App → 进入要桥接的 **具体 session**（仅停在首页可能节流扩展）。  
-2. 确认 `config/bots.json` 里 `Copilot` 有 token、未 disabled。  
+2. 确认 `config/bots.json` 里 `Copilot` 有 token、`"disabled": false`（或未设 `disabled`）。要停用 join bot 时设 `"disabled": true`，并给 Headless 写 `"role": "headless"`。  
 3. 首次：Telegram 任意消息 → 终端配对码 → 回发完成 `config/access.json`。  
 4. 手机对 `@YourCopilotBot` 发消息，应进当前桌面会话。  
 5. 换会话：先在 App 打开目标会话 → TG `/session` 点编号。

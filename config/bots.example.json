@@ -4,12 +4,15 @@
     "username": "YourCopilotBot",
     "addedAt": "2026-01-01T00:00:00.000Z",
     "label": "Copilot",
+    "role": "editor",
+    "disabled": false,
     "permissionMode": "allow-all"
   },
   "Headless": {
     "token": "<YOUR_HEADLESS_BOT_TOKEN>",
     "username": "YourHeadlessBot",
     "addedAt": "2026-01-01T00:00:00.000Z",
+    "role": "headless",
     "disabled": false,
     "label": "Headless"
   },

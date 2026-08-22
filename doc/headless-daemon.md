@@ -171,7 +171,7 @@
    - `providers[].enabled` 控制上游切换；同一时刻建议只启用一个第三方 provider。
 3. Key/URL：`loadShellEnvForByok()` 读 bash 的 `DEEPSEEK_*` / `OPENCODE_*` / `COPILOT_*` / `CLIPROXY_*`；`paths.cliproxyConfig` 可用 `${HOME}`；`paths.agentsMd` 默认 `../agent-memory/AGENTS.md`（与 join 共用；也可用 `${EXTENSIONS}` / `${BRIDGE_ROOT}`）。
 4. 改模型：只编辑 `config/models.json`，先运行 `node scripts/check-model-config.mjs --live`，再执行 `bash scripts/headless-daemon.sh restart`。
-5. **上下文窗口**：Headless 读取 `catalog.<id>.max*Tokens`；桌面 SQLite 与 OpenCodex 配置由 `/fixctx` 从 `modelSets.fixctx` 应用。详见 [`custom-models-context.md`](./custom-models-context.md)。
+5. **上下文窗口**：Headless 读取 `catalog.<id>.max*Tokens`；桌面 SQLite 由 `/fixctx` 从 `modelSets.fixctx` 应用。详见 [`custom-models-context.md`](./custom-models-context.md)。
 6. **用户 MCP**：create/resume 显式加载 `paths.mcpConfig`（默认 `~/.copilot/mcp-config.json`）→ `SessionConfig.mcpServers`。详见 §14。
 7. **per-bot 模型/MCP**：`bots.json` 推荐写 `modelSet` / `loadMcp` / `mcpServerNames`；旧 `defaultModel` / `allowedModels` 仍兼容（见 [`prompt-reverse-bot.md`](./prompt-reverse-bot.md)）。
 

@@ -26,6 +26,8 @@ import {
     loadShellEnvForByok,
     loadAgentsMdInstructions,
     buildHeadlessSessionConfig,
+    loadModelsConfig,
+    isOfficialModelBlocked,
 } from "./lib/byok-providers.mjs";
 import { loadJsonOrDefault, saveJsonAtomic } from "./lib/json-util.mjs";
 import {
@@ -82,7 +84,7 @@ function buildTelegramBotMenu(opts = {}) {
         { command: "rename", description: "✏️ 修改会话名称" },
         { command: "clean", description: "♻️ 清理历史会话" },
         { command: "rich", description: "📐 表格富文本开关" },
-        { command: "fixctx", description: "🔧 修复模型上下文" },
+        { command: "fixctx", description: "🔧 修复 Copilot 模型上下文" },
     ];
     if (opts.includeReboot) {
         menu.push({ command: "reboot", description: "🧿 重启无头服务" });
@@ -1591,8 +1593,9 @@ async function registerSlashCommand(sess) {
                             // 无头：对齐桌面「Run tools without asking」
                             await enableHeadlessAllowAll(session);
 
-                            // per-bot 固定模型：resume 后强制 switch，避免粘性会话残留别的模型
-                            if (sessionConfig.model && (botProfile.defaultModel || botProfile.allowedModels)) {
+                            // BYOK 配置生效时：resume 后强制切到配置默认模型，
+                            // 避免粘性会话残留官方 auto 等被屏蔽模型。
+                            if (sessionConfig.model && sessionConfig._forceModelLocal) {
                                 try {
                                     await session.rpc.model.switchTo({
                                         modelId: sessionConfig.model,
@@ -1686,6 +1689,49 @@ async function registerSlashCommand(sess) {
 
                     // join + allow-all：会话级放行（与无头一致）；ask 模式此函数会 no-op
                     await enableHeadlessAllowAll(session);
+
+                    // 桌面端模型纠偏：App 重启后会话可能回到官方 auto。
+                    // 有 per-bot 显式 defaultModel 时始终强制；否则仅在当前模型命中屏蔽名单时纠正。
+                    const desktopDefault = botProfile.defaultModel || loadModelsConfig().defaultModel || null;
+                    if (desktopDefault) {
+                        try {
+                            const desiredFull = String(desktopDefault).trim();
+                            const desiredLocal = desiredFull.includes("/")
+                                ? desiredFull.split("/").pop()
+                                : desiredFull;
+                            const current = await session.rpc.model.getCurrent();
+                            const currentId = current?.modelId || "";
+                            const shouldSwitch = !!botProfile.defaultModel ||
+                                isOfficialModelBlocked(currentId, loadModelsConfig()) ||
+                                String(currentId).toLowerCase() === "auto";
+                            if (shouldSwitch) {
+                                const res = await session.rpc.model.list();
+                                const all = res?.list || [];
+                                const target =
+                                    all.find((m) => String(m.id) === desiredFull) ||
+                                    all.find((m) => String(m.id || "").endsWith("/" + desiredLocal)) ||
+                                    all.find((m) => String(m.id) === desiredLocal);
+                                if (target?.id) {
+                                    await session.rpc.model.switchTo({
+                                        modelId: target.id,
+                                        contextTier: "default",
+                                    });
+                                    console.error(
+                                        `telegram-bridge: [${name}] desktop model corrected → ${target.id}`
+                                    );
+                                } else {
+                                    console.error(
+                                        `telegram-bridge: [${name}] desktop model '${desktopDefault}' not found in joined session`
+                                    );
+                                }
+                            }
+                        } catch (modelErr) {
+                            console.error(
+                                `telegram-bridge: [${name}] desktop model correction failed:`,
+                                modelErr.message
+                            );
+                        }
+                    }
 
                     await registerSlashCommand(session);
 

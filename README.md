@@ -23,7 +23,8 @@
 
 - 注册表：`config/bots.json`（token 明文、**不进 Git**）
 - 每 bot 独立目录：`bots/<Name>/`（lock / state / leader）
-- 角色判定：`bots.json` 的 `role`（`editor` | `headless`）优先；缺省时启用序第 1 个 = editor，其后 = headless
+- 开关：`bots.json` 各 bot 的 `disabled`（`true` 则跳过；热重载需重启 App 会话 / Headless 守护）
+- 角色：`role`（`editor` = joinSession，`headless` = create/resume）优先；缺省时名称 `Copilot`/`Editor` → editor，`Headless` 或带 `profile` → headless，其余仍按启用序第 1 个 = editor
 - 专文：[`editor-bot.md`](doc/editor-bot.md) · [`headless-daemon.md`](doc/headless-daemon.md) · [`models-config.md`](doc/models-config.md)
 
 ### 模块拆分

@@ -39,7 +39,6 @@ for (const id of fixctx.models) {
     const model = config.catalog[id];
     assert(model?.maxPromptTokens, `catalog.${id}.maxPromptTokens is required by fixctx`);
     assert(model?.maxOutputTokens, `catalog.${id}.maxOutputTokens is required by fixctx`);
-    assert(model?.fixctx?.opencodexContextWindow, `catalog.${id}.fixctx is incomplete`);
 }
 
 for (const botsPath of [
@@ -109,32 +108,16 @@ if (!process.argv.includes("--skip-fixctx-fixture")) {
 }
 
 if (live) {
-    let fixctxLiveChecked = false;
     for (const provider of config.providers.filter((item) => item.enabled !== false)) {
-        const checkFixctx = provider.id === "opencodex";
         const resolved = await resolveProviderCatalog(provider, {
             requireLive: true,
             timeoutMs: 10000,
-            requiredModelIds: checkFixctx ? fixctx.models : [],
         });
         assert(resolved, `provider ${provider.id} did not resolve`);
         assert.deepEqual(
             resolved.modelIds,
             provider.models.map((model) => model.id),
             `provider ${provider.id} live catalog order differs from its modelSet`,
-        );
-        if (checkFixctx) fixctxLiveChecked = true;
-    }
-    if (!fixctxLiveChecked) {
-        const opencodex = config.providers.find((provider) => provider.id === "opencodex");
-        assert(opencodex, "an opencodex provider is required to validate fixctx models");
-        await resolveProviderCatalog(
-            { ...opencodex, enabled: true },
-            {
-                requireLive: true,
-                timeoutMs: 10000,
-                requiredModelIds: fixctx.models,
-            },
         );
     }
 }
