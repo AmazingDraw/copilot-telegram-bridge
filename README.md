@@ -88,7 +88,7 @@ createBotInstance(name, token, isHeadless)
 
 | 命令 | 作用 |
 | :--- | :--- |
-| `/start` | 连接状态 / 帮助 |
+| `/new` | 无头 `createSession` 开新对话（`/start` 仍是别名） |
 | `/stop` `/cancel` | `session.abort`，清 typing/bubble |
 | `/session` | 最近 **可 resume** 最多 10 条 + ①–⑩ 一键切换 |
 | `/clean` | 空壳只显示数量、一键直删；真会话最多 **15** 条点号删（二次确认） |
@@ -113,7 +113,7 @@ createBotInstance(name, token, isHeadless)
 
 > 完整机制（CLI 缓存 / LaunchAgent / 排障 / MCP）：[`headless-daemon.md`](doc/headless-daemon.md)
 
-**当前默认上游**：**CLI Proxy**（`http://127.0.0.1:8317/v1`，密钥读取 `~/.cli-proxy-api/config.yaml`）。实际模型列表只看 `config/models.json` 的 `modelSets.headless`，会话 id 形如 `cliproxy/<id>`。
+**上游**：CLI Proxy，密钥读 `~/.cli-proxy-api/config.yaml` 或 `CLIPROXY_API_KEY`。`baseUrl` 在本机 `http://127.0.0.1:8317/v1` 与 NAS 铜线 `http://169.254.1.2:8317/v1` 之间随时可切（NAS 不稳就切回本机）。看指针、切机用 `switch-cliproxy-backend.sh`，说明见 cli-proxy-api `references/mac-vs-nas-urls.md`。实际模型列表只看 `config/models.json` 的 `modelSets.headless`，会话 id 形如 `cliproxy/<id>`。
 
 **开关与回滚**（`config/models.json`，改完 `headless-daemon.sh restart`）：
 

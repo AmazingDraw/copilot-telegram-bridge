@@ -73,7 +73,7 @@ const BOTS_DIR = join(EXT_DIR, "bots");
  */
 function buildTelegramBotMenu(opts = {}) {
     const menu = [
-        { command: "start", description: "🔗 连接重连会话" },
+        { command: "new", description: "🆕 开启新对话" },
         { command: "stop", description: "✋ 打断当前任务" },
         { command: "session", description: "📋 查看最近会话" },
         { command: "codex", description: "🤖 ChatGPT 交互" },
@@ -84,7 +84,7 @@ function buildTelegramBotMenu(opts = {}) {
         { command: "rename", description: "✏️ 修改会话名称" },
         { command: "clean", description: "♻️ 清理历史会话" },
         { command: "rich", description: "📐 表格富文本开关" },
-        { command: "fixctx", description: "🔧 修复 Copilot 模型上下文" },
+        { command: "fixctx", description: "🔧 修复模型上下文" },
     ];
     if (opts.includeReboot) {
         menu.push({ command: "reboot", description: "🧿 重启无头服务" });
@@ -989,6 +989,7 @@ const {
     handleModeCallback,
     handleThinkingCommand,
     handleThinkingCallback,
+    handleNewCommand,
     handleSessionCommand,
     handleSessionCallback,
     handleCleanCommand,
@@ -1016,6 +1017,7 @@ Object.assign(ctx, {
     handleModeCallback,
     handleThinkingCommand,
     handleThinkingCallback,
+    handleNewCommand,
     handleSessionCommand,
     handleSessionCallback,
     handleCleanCommand,
@@ -1619,7 +1621,7 @@ async function registerSlashCommand(sess) {
                                 if (restricted) {
                                     void syncBotCommandsMenu({
                                         commands: [
-                                            { command: "start", description: "🔗 状态 / 连接" },
+                                            { command: "new", description: "🆕 开启新对话" },
                                             { command: "stop", description: "✋ 打断当前任务" },
                                         ],
                                     });

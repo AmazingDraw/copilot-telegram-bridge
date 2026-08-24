@@ -37,6 +37,10 @@
 		<string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
 		<key>HOME</key>
 		<string>__HOME__</string>
+		<key>NO_PROXY</key>
+		<string>localhost,127.0.0.1,169.254.1.2,169.254.0.0/16,192.168.0.0/16</string>
+		<key>no_proxy</key>
+		<string>localhost,127.0.0.1,169.254.1.2,169.254.0.0/16,192.168.0.0/16</string>
 	</dict>
 </dict>
 </plist>

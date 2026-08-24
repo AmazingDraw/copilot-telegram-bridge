@@ -52,7 +52,7 @@
 **依赖链（缺一不可）**
 
 1. **CLI 缓存二进制** + **bootstrap / copilot-sdk**（见 §5）  
-2. **cli-proxy-api** 本机 `http://127.0.0.1:8317`（通常另有 LaunchAgent）  
+2. **cli-proxy-api**：Mac `127.0.0.1:8317` 与 NAS 铜线 `169.254.1.2:8317` **对等可切**。以 `models.json` / `CLIPROXY_BASE_URL` 当前指针为准；NAS 不稳切回本机。见 cli-proxy-api `references/mac-vs-nas-urls.md`  
 3. **config/bots.json** 中 Headless 的 token + **config/access.json** 授权用户  
 4. 本扩展目录与 `scripts/headless-daemon.sh` / plist 模板
 
@@ -195,7 +195,7 @@
 | 权限 / ask_user | **默认无头**（`permissionMode` 缺省 / allow-all）：`setAllowAll` + handler `approve-once`。**deny-all**（如 SecondaryBot）：`setAllowAll(false)` + handler `deny-once`。**Editor**：`bots.json` 可设 `allow-all`（现默认已开）或 `ask`（TG 批准卡）。`ask_user` 用 freeform/按钮解冻 awaitingInput |
 | 准入 | 默认 **allowlist**（`access.json` 配对）；**open-group** 等见 bot profile |
 
-Slash：`/session` `/clean` `/model` `/mode` `/status` `/rich` `/stop` 等与 README 一致；**restricted** bot 菜单可缩到仅 `/start` `/stop`。无头侧 `/session` 切换的是 **该 bot sticky 会话**。`/rich` **默认关**（表格→列表）；`on` 才走富文本表。
+Slash：`/new` `/session` `/clean` `/model` `/mode` `/status` `/rich` `/stop` 等与 README 一致；**restricted** bot 菜单可缩到仅 `/new` `/stop`。
 
 ---
 
@@ -243,8 +243,9 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh st
 # 2) launchd
 launchctl print "gui/$(id -u)/com.copilot-telegram-bridge" | head
 
-# 3) 网关
-curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8317/v1/models
+# 3) 网关：两端都探；以当前指针为准（见 switch-cliproxy-backend.sh status）
+curl -sS -m 5 -o /dev/null -w "mac %{http_code}\n" http://127.0.0.1:8317/v1/models
+curl -sS -m 8 -o /dev/null -w "nas %{http_code}\n" http://169.254.1.2:8317/v1/models
 
 # 4) 日志尾
 tail -50 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log

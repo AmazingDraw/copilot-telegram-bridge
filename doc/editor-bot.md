@@ -115,7 +115,7 @@ start:
 
 | 命令 | 桌面侧说明 |
 | :--- | :--- |
-| `/start` | 状态 / 重连说明 |
+| `/new` | 无头开新对话（`/start` 别名） |
 | `/stop` | `session.abort`，清 typing、bubble |
 | `/session` | 最近可 resume；切换 = **handoff** |
 | `/model` | 对 **当前 join 的会话** `model.list()`（官方白名单 + 桌面 BYOK） |
@@ -123,7 +123,7 @@ start:
 | `/mode` | Interactive / Plan / Autopilot |
 | `/rename` | 改会话名（写 `workspace.yaml` 等） |
 | `/clean` | 空壳数量 + 一键直删；真会话最多 **15** 条点号删（二次确认，不显示 id） |
-| `/fixctx` | 修复 Copilot 桌面模型上下文 |
+| `/fixctx` | 修复桌面自定义模型上下文窗口 |
 | `/status` | 当前模型 / 模式 / 会话 / 表格投递方式 |
 | `/rich` | 表格富文本开/关（**默认关**＝列表 HTML；开＝`sendRichMessage` 表） |
 | `/reboot` | **仅 Editor 菜单**：重启无头 daemon（🧿） |
