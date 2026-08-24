@@ -88,7 +88,7 @@ createBotInstance(name, token, isHeadless)
 
 | 命令 | 作用 |
 | :--- | :--- |
-| `/new` | 无头 `createSession` 开新对话（`/start` 仍是别名） |
+| `/new` | 无头 `createSession` 开启全新对话（`/start` 仍是别名） |
 | `/stop` `/cancel` | `session.abort`，清 typing/bubble |
 | `/session` | 最近 **可 resume** 最多 10 条 + ①–⑩ 一键切换 |
 | `/clean` | 空壳只显示数量、一键直删；真会话最多 **15** 条点号删（二次确认） |

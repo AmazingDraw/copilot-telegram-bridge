@@ -115,7 +115,7 @@ start:
 
 | 命令 | 桌面侧说明 |
 | :--- | :--- |
-| `/new` | 无头开新对话（`/start` 别名） |
+| `/new` | 无头开启全新对话（`/start` 别名） |
 | `/stop` | `session.abort`，清 typing、bubble |
 | `/session` | 最近可 resume；切换 = **handoff** |
 | `/model` | 对 **当前 join 的会话** `model.list()`（官方白名单 + 桌面 BYOK） |

@@ -73,7 +73,7 @@ const BOTS_DIR = join(EXT_DIR, "bots");
  */
 function buildTelegramBotMenu(opts = {}) {
     const menu = [
-        { command: "new", description: "🆕 开启新对话" },
+        { command: "new", description: "🆕 开启全新对话" },
         { command: "stop", description: "✋ 打断当前任务" },
         { command: "session", description: "📋 查看最近会话" },
         { command: "codex", description: "🤖 ChatGPT 交互" },
@@ -1621,7 +1621,7 @@ async function registerSlashCommand(sess) {
                                 if (restricted) {
                                     void syncBotCommandsMenu({
                                         commands: [
-                                            { command: "new", description: "🆕 开启新对话" },
+                                            { command: "new", description: "🆕 开启全新对话" },
                                             { command: "stop", description: "✋ 打断当前任务" },
                                         ],
                                     });
