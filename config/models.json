@@ -69,6 +69,12 @@
       "maxContextWindowTokens": 200000,
       "maxOutputTokens": 16384
     },
+    "cursor-auto": {
+      "label": "Cursor Auto",
+      "maxPromptTokens": 256000,
+      "maxContextWindowTokens": 256000,
+      "maxOutputTokens": 32000
+    },
     "cursor-grok-4.6-low": {
       "label": "Cursor Grok 4.6 Low",
       "maxPromptTokens": 256000,
@@ -152,6 +158,7 @@
         "mimo-v2.5",
         "gemini-3.7-flash-high",
         "claude-sonnet-4-6",
+        "cursor-auto",
         "cursor-grok-4.6-low",
         "cursor-grok-4.6-medium",
         "cursor-grok-4.6-high",
@@ -176,6 +183,7 @@
     "fixctx": {
       "$comment": "Copilot data.db 的修复目标。",
       "models": [
+        "cursor-auto",
         "cursor-grok-4.6-low",
         "cursor-grok-4.6-medium",
         "cursor-grok-4.6-high",
