@@ -3,7 +3,8 @@
   "schemaVersion": 2,
   "officialFallback": "cliproxy/deepseek-v4-flash",
   "defaults": {
-    "maxContextWindowTokens": 200000
+    "maxContextWindowTokens": 200000,
+    "codexWaitTimeoutMs": 3600000
   },
   "display": {
     "officialModels": {
@@ -232,7 +233,7 @@
       "id": "cliproxy",
       "enabled": true,
       "type": "openai",
-      "baseUrl": "http://169.254.1.2:8317/v1",
+      "baseUrl": "http://127.0.0.1:8317/v1",
       "baseUrlEnv": [
         "CLIPROXY_BASE_URL",
         "CLI_PROXY_BASE_URL"

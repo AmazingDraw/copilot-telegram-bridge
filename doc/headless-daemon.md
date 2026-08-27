@@ -41,6 +41,7 @@
 │       ├─ 每 bot 独立 leader / sticky / poll                 │
 │       ├─ create/resume + BYOK（models.json）                │
 │       ├─ 用户 MCP 显式注入（mcp-config.json；可 per-bot 关） │
+│       ├─ 用户 Skills（enableSkills + ~/.agents/skills）     │
 │       └─ CLI Proxy :8317 直连 BYOK                           │
 └─────────────────────────────────────────────────────────────┘
 
@@ -173,7 +174,8 @@
 4. 改模型：只编辑 `config/models.json`，先运行 `node scripts/check-model-config.mjs --live`，再执行 `bash scripts/headless-daemon.sh restart`。
 5. **上下文窗口**：Headless 读取 `catalog.<id>.max*Tokens`；桌面 SQLite 由 `/fixctx` 从 `modelSets.fixctx` 应用。详见 [`custom-models-context.md`](./custom-models-context.md)。
 6. **用户 MCP**：create/resume 显式加载 `paths.mcpConfig`（默认 `~/.copilot/mcp-config.json`）→ `SessionConfig.mcpServers`。详见 §14。
-7. **per-bot 模型/MCP**：`bots.json` 推荐写 `modelSet` / `loadMcp` / `mcpServerNames`；旧 `defaultModel` / `allowedModels` 仍兼容（见 [`prompt-reverse-bot.md`](./prompt-reverse-bot.md)）。
+7. **用户 Skills**：create/resume 设 `enableSkills: true` + `skillDirectories: ~/.agents/skills`（**不**开 `enableConfigDiscovery`）。日志 `skills_loaded`。抽卡走 Copilot 内置 `skill` 工具（`codex`），不是 mcp-config 里的 MCP server。粘性旧会话可能要 `/new` 才注入。
+8. **per-bot 模型/MCP**：`bots.json` 推荐写 `modelSet` / `loadMcp` / `mcpServerNames`；旧 `defaultModel` / `allowedModels` 仍兼容（见 [`prompt-reverse-bot.md`](./prompt-reverse-bot.md)）。
 
 **锁文件**：`bots/<Name>/lock.json` —— 标记该 bot 当前占用 session；他会话持锁时 auto-connect 会停手，避免双连。
 
@@ -376,4 +378,18 @@ CLI 缓存
 
 ---
 
-*文档与实现对齐日期：2026-07-17。代码以仓库为准；运维改脚本后请同步改本节。*
+## 15. 用户 Skills（显式加载）
+
+无头 **create/resume** 设 `enableSkills: true` 与 `skillDirectories: ~/.agents/skills`（软链农场，指向 AGY 真源）。**不开** `enableConfigDiscovery`。
+
+抽卡加载走 Copilot 内置 `skill` 工具（名 `codex`），不是 `mcp-config.json` 里的 MCP。连抽执行仍是本机 CLI。
+
+粘性旧会话若看不到 `skills_loaded`，发 `/new` 再试。
+
+日志：`headless skills enableSkills=true dir=…`；绑定后 `skills_loaded count=N sample=…`。
+
+长轮无工具气泡超过约 3 分钟会提示可 `/stop`。`auth_unavailable` / HTTP2 `INTERNAL_ERROR` 对用户显示为「上游模型流断了」，不是没登录。
+
+---
+
+*文档与实现对齐日期：2026-08-27。代码以仓库为准；运维改脚本后请同步改本节。*
