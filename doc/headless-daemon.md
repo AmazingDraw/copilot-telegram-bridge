@@ -388,7 +388,7 @@ CLI 缓存
 
 日志：`headless skills enableSkills=true dir=…`；绑定后 `skills_loaded count=N sample=…`。
 
-长轮无工具气泡超过约 3 分钟会提示可 `/stop`。`auth_unavailable` / HTTP2 `INTERNAL_ERROR` 对用户显示为「上游模型流断了」，不是没登录。
+长轮无工具气泡超过约 3 分钟会提示可 `/stop`。`auth_unavailable` 提示上游鉴权/配额异常引导 `/model` 切换；HTTP2 `INTERNAL_ERROR` / 流断开提示连接中断引导重试，均注明非本机登录失效。
 
 ---
 
