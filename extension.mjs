@@ -1455,6 +1455,8 @@ async function registerSlashCommand(sess) {
                                 allowedModels: botProfile.allowedModels || null,
                                 forceDefaultModel: !!(botProfile.defaultModel || botProfile.allowedModels),
                                 loadMcp: botProfile.loadMcp !== false,
+                                loadSkills: botProfile.loadSkills !== false,
+                                systemMessageMode: botProfile.systemMessageMode || "customize",
                                 mcpServerNames: botProfile.mcpServerNames || null,
                             });
 
