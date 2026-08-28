@@ -26,6 +26,7 @@
 - 开关：`bots.json` 各 bot 的 `disabled`（`true` 则跳过；热重载需重启 App 会话 / Headless 守护）
 - 角色：`role`（`editor` = joinSession，`headless` = create/resume）优先；缺省时名称 `Copilot`/`Editor` → editor，`Headless` 或带 `profile` → headless，其余仍按启用序第 1 个 = editor
 - 专文：[`editor-bot.md`](doc/editor-bot.md) · [`headless-daemon.md`](doc/headless-daemon.md) · [`models-config.md`](doc/models-config.md)
+- 系统提示词定制与裁剪：[`system-prompts.md`](doc/system-prompts.md)（replace 模式 / customize 模式 / skills 开关）
 
 ### 模块拆分
 

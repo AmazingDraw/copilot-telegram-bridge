@@ -144,7 +144,6 @@
       "models": [
         "deepseek-v4-flash",
         "deepseek-v4-pro",
-        "mimo-v2.5",
         "gemini-3.7-flash-high",
         "claude-sonnet-4-6",
         "cursor-auto",
