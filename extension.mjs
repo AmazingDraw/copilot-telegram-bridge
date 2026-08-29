@@ -31,6 +31,8 @@ import {
     pickStickySessionModel,
     isSingleModelLock,
     ensureUnblockedSessionModel,
+    banishBlockedSessionModel,
+    collectBotModelFallbacks,
 } from "./lib/byok-providers.mjs";
 import { loadJsonOrDefault, saveJsonAtomic } from "./lib/json-util.mjs";
 import {
@@ -1614,18 +1616,32 @@ async function registerSlashCommand(sess) {
                             // 无头：对齐桌面「Run tools without asking」
                             await enableHeadlessAllowAll(session);
 
-                            // BYOK：单模型锁或新建会话才强制切；resume 保留会话里已选模型（官方 auto 仍会纠正）。
+                            // BYOK：单模型锁或新建会话才强制切；resume 保留会话里已选模型。
+                            // 官方 auto 无论何时一律踢走。
                             if (sessionConfig.model) {
                                 const applied = await ensureUnblockedSessionModel(session, {
                                     desiredModel: sessionConfig.model,
                                     force: singleLock || !didResume,
                                     logPrefix: `telegram-bridge: [${name}]`,
                                 });
-                                if (applied?.currentId && typeof rememberBotModel === "function") {
+                                if (applied?.currentId && !isOfficialModelBlocked(applied.currentId)) {
                                     rememberBotModel(name, applied.currentId);
                                 }
                                 if (applied?.switched && applied.desiredModel) {
                                     rememberBotModel(name, applied.desiredModel);
+                                }
+                            }
+                            {
+                                const kicked = await banishBlockedSessionModel(session, {
+                                    fallbacks: collectBotModelFallbacks({
+                                        lastModelId: typeof readBotModel === "function" ? readBotModel(name) : null,
+                                        defaultModel: botProfile.defaultModel,
+                                        sessionModel: sessionConfig.model,
+                                    }),
+                                    logPrefix: `telegram-bridge: [${name}]`,
+                                });
+                                if (kicked?.switched && kicked.desiredModel) {
+                                    rememberBotModel(name, kicked.desiredModel);
                                 }
                             }
 
@@ -1708,10 +1724,24 @@ async function registerSlashCommand(sess) {
                     // join + allow-all：会话级放行（与无头一致）；ask 模式此函数会 no-op
                     await enableHeadlessAllowAll(session);
 
-                    // 桌面端模型纠偏：App 重启后会话可能回到官方 auto。
-                    // 有 per-bot 显式 defaultModel 时始终强制；否则仅在当前模型命中屏蔽名单时纠正。
-                    const desktopDefault = botProfile.defaultModel || loadModelsConfig().defaultModel || null;
-                    if (desktopDefault) {
+                    // 桌面端：官方 auto 一律踢走；有 per-bot default 时再对齐 default。
+                    const modelsCfg = loadModelsConfig();
+                    const desktopDefault = botProfile.defaultModel || modelsCfg.defaultModel || null;
+                    try {
+                        const kicked = await banishBlockedSessionModel(session, {
+                            fallbacks: collectBotModelFallbacks({
+                                lastModelId: typeof readBotModel === "function" ? readBotModel(name) : null,
+                                defaultModel: desktopDefault,
+                            }),
+                            logPrefix: `telegram-bridge: [${name}]`,
+                        });
+                        if (kicked?.switched && kicked.desiredModel && typeof rememberBotModel === "function") {
+                            rememberBotModel(name, kicked.desiredModel);
+                        }
+                    } catch (kickErr) {
+                        console.error(`telegram-bridge: [${name}] desktop auto banish failed:`, kickErr.message);
+                    }
+                    if (desktopDefault && botProfile.defaultModel) {
                         try {
                             const desiredFull = String(desktopDefault).trim();
                             const desiredLocal = desiredFull.includes("/")
@@ -1719,17 +1749,19 @@ async function registerSlashCommand(sess) {
                                 : desiredFull;
                             const current = await session.rpc.model.getCurrent();
                             const currentId = current?.modelId || "";
-                            const shouldSwitch = !!botProfile.defaultModel ||
-                                isOfficialModelBlocked(currentId, loadModelsConfig()) ||
-                                String(currentId).toLowerCase() === "auto";
-                            if (shouldSwitch) {
+                            const currentLocal = String(currentId).includes("/")
+                                ? String(currentId).split("/").pop()
+                                : String(currentId);
+                            const shouldSwitch = isOfficialModelBlocked(currentId, modelsCfg)
+                                || currentLocal.toLowerCase() !== String(desiredLocal).toLowerCase();
+                            if (shouldSwitch && !isOfficialModelBlocked(desiredFull, modelsCfg)) {
                                 const res = await session.rpc.model.list();
                                 const all = res?.list || [];
                                 const target =
                                     all.find((m) => String(m.id) === desiredFull) ||
                                     all.find((m) => String(m.id || "").endsWith("/" + desiredLocal)) ||
                                     all.find((m) => String(m.id) === desiredLocal);
-                                if (target?.id) {
+                                if (target?.id && !isOfficialModelBlocked(target.id, modelsCfg)) {
                                     await session.rpc.model.switchTo({
                                         modelId: target.id,
                                         contextTier: "default",
@@ -1744,10 +1776,7 @@ async function registerSlashCommand(sess) {
                                 }
                             }
                         } catch (modelErr) {
-                            console.error(
-                                `telegram-bridge: [${name}] desktop model correction failed:`,
-                                modelErr.message
-                            );
+                            console.error(`telegram-bridge: [${name}] desktop model switch failed:`, modelErr.message);
                         }
                     }
 
