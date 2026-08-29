@@ -9,3 +9,4 @@ bots.json
 bots/
 config/access.json
 config/bots.json
+.skills-allow/
