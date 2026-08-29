@@ -93,7 +93,7 @@ createBotInstance(name, token, isHeadless)
 | `/stop` `/cancel` | `session.abort`，清 typing/bubble |
 | `/session` | 最近 **可 resume** 最多 10 条 + ①–⑩ 一键切换 |
 | `/clean` | 空壳只显示数量、一键直删；真会话最多 **15** 条点号删（二次确认） |
-| `/model` | 模型列表 + hash 按钮（≤64 字节 `callback_data`） |
+| `/model` | 模型列表 + hash 按钮（≤64 字节 `callback_data`）；无头切换会 **resume 同会话并重注入人设** |
 | `/thinking` | 思考等级：官方模型走 `reasoningEffort`；第三方走模型别名切换 |
 | `/mode` | Interactive / Plan / Autopilot（Plan 为**粘性**：批准卡与计划正文分开发） |
 | `/status` | 当前模型 / 思考 / 模式 / 会话 / 上下文 / 表格投递 |
