@@ -53,11 +53,11 @@
 | **`guidelines`** | 终端行为建议 | **remove**（冗余且易盖人设） |
 | **`safety`** | 危险操作与保密 | **replace** → `HEADLESS_SAFETY_SLIM` |
 | **`tool_instructions`** | 各内置工具用法 | **保留** |
-| **`custom_instructions`** | 仓库/组织指令（SDK 发现） | **保留**（不在此重复贴 AGENTS.md） |
+| **`custom_instructions`** | 仓库/组织指令（SDK 发现） | **remove**（人设只走 content，避免叠一层） |
 | **`runtime_instructions`** | 运行时通知、mode、排除策略 | **保留** |
-| **`last_instructions`** | 收尾：并行调用、把任务做完 | **保留** |
+| **`last_instructions`** | 收尾：并行调用、把任务做完 | **remove**（与 tool_efficiency / 人设重复） |
 
-人设放在 customize 的顶层 **`content`**（等价于 append 的 content）：排在全部 section **之后**，避免被 `last_instructions` 盖掉。不再同时写 `organizationCustomInstructions`，以免 AGENTS.md 打两遍。
+人设放在 customize 的顶层 **`content`**（全部保留 section 之后）。不写 `organizationCustomInstructions`。
 
 垂直 Bot 继续 `replace`，不要用这套裁剪。
 
@@ -125,7 +125,7 @@
 ## 7. 日志
 
 ```text
-telegram-bridge: systemMessage mode=customize sections=preamble:remove,tone:remove,guidelines:remove,safety:replace agents=3240c
+telegram-bridge: systemMessage mode=customize sections=preamble:remove,tone:remove,guidelines:remove,custom_instructions:remove,last_instructions:remove,safety:replace agents=3240c
 telegram-bridge: [Headless] headless model rehydrate → cliproxy/xxx session=<uuid> agents=3240c
 
 telegram-bridge: systemMessage mode=replace (len=2283c)
