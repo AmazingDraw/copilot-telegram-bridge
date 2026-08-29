@@ -204,7 +204,8 @@
         "cli-proxy-api",
         "mac-vpn-ops",
         "translator",
-        "pdf-ops"
+        "pdf-ops",
+        "kimi-webbridge"
       ]
     }
   },
