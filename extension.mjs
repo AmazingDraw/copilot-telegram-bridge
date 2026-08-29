@@ -73,7 +73,8 @@ const BOTS_REGISTRY_PATH = join(CONFIG_DIR, "bots.json");
 const BOTS_DIR = join(EXT_DIR, "bots");
 
 /**
- * Telegram Bot 命令菜单（join / headless 共用；reboot 仅 editor 侧）。
+ * Telegram Bot 命令菜单（join / headless 共用）。
+ * 无头 /reboot 靠 launchd KeepAlive 真重启；PromptReverse 等受限菜单不加此项。
  * @param {{ includeReboot?: boolean }} [opts]
  */
 function buildTelegramBotMenu(opts = {}) {
@@ -1658,7 +1659,7 @@ async function registerSlashCommand(sess) {
                                         ],
                                     });
                                 } else {
-                                    void syncBotCommandsMenu({ includeReboot: false });
+                                    void syncBotCommandsMenu({ includeReboot: true });
                                 }
                             }
                             void syncBotDisplayName();
