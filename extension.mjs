@@ -1664,6 +1664,29 @@ async function registerSlashCommand(sess) {
                             }
                             void syncBotDisplayName();
 
+                            // /reboot KeepAlive：新进程起来后再通知触发聊天（普通崩溃重启不写这个文件）
+                            try {
+                                const notifyPath = join(botDir(name), "reboot-notify.json");
+                                const pending = loadJsonOrDefault(notifyPath, null);
+                                if (pending && pending.chatId != null) {
+                                    try { rmSync(notifyPath, { force: true }); } catch {}
+                                    const age = Date.now() - Number(pending.at || 0);
+                                    if (age >= 0 && age <= 120000) {
+                                        void sendMessage(
+                                            pending.chatId,
+                                            "♻️ <b>无头服务已上线</b>",
+                                            "HTML"
+                                        ).catch((err) => {
+                                            console.error(
+                                                `telegram-bridge: [${name}] reboot online notify failed: ${err.message}`
+                                            );
+                                        });
+                                    }
+                                }
+                            } catch (err) {
+                                console.error(`telegram-bridge: [${name}] reboot-notify read failed: ${err.message}`);
+                            }
+
                             // 进入长轮询，如果是因 session 掉线跳出循环，本自愈逻辑会重新触发外层 while 重连
                             await pollLoop();
                         } catch (err) {
