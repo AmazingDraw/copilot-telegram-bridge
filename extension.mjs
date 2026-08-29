@@ -28,6 +28,9 @@ import {
     buildHeadlessSessionConfig,
     loadModelsConfig,
     isOfficialModelBlocked,
+    pickStickySessionModel,
+    isSingleModelLock,
+    ensureUnblockedSessionModel,
 } from "./lib/byok-providers.mjs";
 import { loadJsonOrDefault, saveJsonAtomic } from "./lib/json-util.mjs";
 import {
@@ -773,6 +776,8 @@ const {
     refreshHeadlessLeadership,
     releaseHeadlessLeadership,
     rememberBotSession,
+    rememberBotModel,
+    readBotModel,
 } = createHeadlessLeaderApi({
     botDir,
     botStatePath,
@@ -888,6 +893,8 @@ const ctx = {
     isLockStale,
     tryClaimLock,
     rememberBotSession,
+    rememberBotModel,
+    readBotModel,
     refreshHeadlessLeadership,
     getProtectedSessionIds,
     listCleanableEmptyShells,
@@ -1443,6 +1450,14 @@ async function registerSlashCommand(sess) {
                                 );
                             }
 
+                            const lastModelId = typeof readBotModel === "function" ? readBotModel(name) : null;
+                            const desiredModel = pickStickySessionModel({
+                                allowedModels: botProfile.allowedModels || null,
+                                defaultModel: botProfile.defaultModel || null,
+                                lastModelId,
+                            });
+                            const singleLock = isSingleModelLock(botProfile.allowedModels);
+                            let didResume = false;
                             const sessionConfig = await buildHeadlessSessionConfig({
                                 officialModels,
                                 customInstructions,
@@ -1451,13 +1466,14 @@ async function registerSlashCommand(sess) {
                                 onPermissionRequest: createPermissionHandler(),
                                 onUserInputRequest: createUserInputHandler(),
                                 onExitPlanModeRequest: createExitPlanModeHandler(),
-                                defaultModel: botProfile.defaultModel || null,
+                                defaultModel: desiredModel || botProfile.defaultModel || null,
                                 allowedModels: botProfile.allowedModels || null,
-                                forceDefaultModel: !!(botProfile.defaultModel || botProfile.allowedModels),
+                                forceDefaultModel: singleLock,
                                 loadMcp: botProfile.loadMcp !== false,
                                 loadSkills: botProfile.loadSkills !== false,
                                 systemMessageMode: botProfile.systemMessageMode || "customize",
                                 mcpServerNames: botProfile.mcpServerNames || null,
+                                skillNames: botProfile.skillNames || null,
                             });
 
                             // 1) 可 resume 才走 resume（空壳只有 workspace.yaml 会 Session not found）
@@ -1473,6 +1489,7 @@ async function registerSlashCommand(sess) {
                                     );
                                     session = await client.resumeSession(resumeTarget, resumeConfig);
                                     currentSessionId = session.sessionId || resumeTarget;
+                                    didResume = true;
                                     console.error(`telegram-bridge: [${name}] headless session resumed: ${currentSessionId}`);
                                 } catch (resumeErr) {
                                     console.error(`telegram-bridge: [${name}] resume failed (${resumeTarget}): ${resumeErr.message}; falling back to createSession`);
@@ -1597,21 +1614,18 @@ async function registerSlashCommand(sess) {
                             // 无头：对齐桌面「Run tools without asking」
                             await enableHeadlessAllowAll(session);
 
-                            // BYOK 配置生效时：resume 后强制切到配置默认模型，
-                            // 避免粘性会话残留官方 auto 等被屏蔽模型。
-                            if (sessionConfig.model && sessionConfig._forceModelLocal) {
-                                try {
-                                    await session.rpc.model.switchTo({
-                                        modelId: sessionConfig.model,
-                                        contextTier: "default",
-                                    });
-                                    console.error(
-                                        `telegram-bridge: [${name}] forced model → ${sessionConfig.model}`
-                                    );
-                                } catch (swErr) {
-                                    console.error(
-                                        `telegram-bridge: [${name}] force model switch failed: ${swErr.message}`
-                                    );
+                            // BYOK：单模型锁或新建会话才强制切；resume 保留会话里已选模型（官方 auto 仍会纠正）。
+                            if (sessionConfig.model) {
+                                const applied = await ensureUnblockedSessionModel(session, {
+                                    desiredModel: sessionConfig.model,
+                                    force: singleLock || !didResume,
+                                    logPrefix: `telegram-bridge: [${name}]`,
+                                });
+                                if (applied?.currentId && typeof rememberBotModel === "function") {
+                                    rememberBotModel(name, applied.currentId);
+                                }
+                                if (applied?.switched && applied.desiredModel) {
+                                    rememberBotModel(name, applied.desiredModel);
                                 }
                             }
 

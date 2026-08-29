@@ -22,6 +22,7 @@ config/models.json
 - `providers[]` 只保存 URL、密钥来源和 `modelSet` 引用。
 - `modelSets.fixctx` 决定 `/fixctx` 修复哪些模型。
 - `bots.json` 推荐只保存 `modelSet` 名，不直接保存模型 ID。
+- `skillSets.<name>` 是 Headless skill 目录头白名单；默认 `skillSets.headless`。`bots.json` 可用 `skillSet` 或 `skillNames` 覆盖。
 
 ## 2. Catalog 字段
 

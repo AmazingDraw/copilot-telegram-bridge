@@ -14,7 +14,8 @@
     "addedAt": "2026-01-01T00:00:00.000Z",
     "role": "headless",
     "disabled": false,
-    "label": "Headless"
+    "label": "Headless",
+    "skillSet": "headless"
   },
   "SecondaryBot": {
     "token": "<YOUR_SECONDARY_BOT_TOKEN>",
