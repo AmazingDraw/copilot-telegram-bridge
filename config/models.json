@@ -189,9 +189,9 @@
     },
     "prompt-reverse": {
       "$comment": "SecondaryBot 专用单模型策略。",
-      "defaultModel": "cursor-grok-4.6-low",
+      "defaultModel": "cursor-auto",
       "models": [
-        "cursor-grok-4.6-low"
+        "cursor-auto"
       ]
     }
   },
