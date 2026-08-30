@@ -2,8 +2,10 @@
 
 将 **GitHub Copilot CLI / App 会话** 与 **Telegram Bot** 双向桥接：手机发消息 → 本机 agent 执行 → 回复、工具气泡、权限确认与 `ask_user` 回落到 Telegram。
 
-> 本机路径：`~/.copilot/extensions/copilot-telegram-bridge`  
-> 远端仓库：`AmazingDraw/copilot-telegram-bridge`
+> 本机路径：`~/.copilot/extensions/copilot-telegram-bridge`（**先改这里**）  
+> 本机远端：`AmazingDraw/copilot-telegram-bridge`  
+> 开源镜像：`AmazingDraw/copilot-telegram-bridge`（改完跑 `bash scripts/sync-to-open-source.sh`）  
+> 开源故意不带提示词反推 Bot。
 
 ---
 
@@ -191,6 +193,32 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 - **会话去重**：历史列表按 `session_meta.payload.session_id`（纯 UUID）去重；`codex exec resume` 必须用纯 UUID，文件名带时间戳前缀会被当新会话
 - **进度存储**：`/tmp/telegram-bridge/codex/tasks.json`，任务完成自动裁剪至最新 50 条
 
+### Claude 子命令（/claude）
+
+通过 Telegram 控制 **Claude Code CLI**（配置/会话仍在 `~/.claude`，任务 cwd 为 `~/.agents/workspace`）。走 OpenCodex `:10100`。
+
+```bash
+/claude                    # 打开子命令菜单
+/claude <prompt>           # 直接新对话执行（不走菜单）
+```
+
+| 菜单项 | callback | 说明 |
+| :--- | :--- | :--- |
+| ✨ 新建对话 | `claude:new` | 新对话输入态 |
+| 📂 继续对话 | `claude:resume` | 历史会话（history.jsonl + projects） |
+| 🧠 切换模型 | `claude:model` | 列表来自 `config/models.json` → `modelSets.claude-cli` |
+| 🗺 计划 | `claude:plan` | `--permission-mode plan`；结束后「✅ 按计划执行」 |
+| ⚡️ 思考档 | `claude:effort` | `--effort`：低/中/高/极高/最大（💎） |
+| 🛟 备援模型 | `claude:fallback` | `--fallback-model` |
+| 📡 实时 | `claude:stream` | `stream-json` 刷新进度 |
+| 📊 查看进度 | `claude:progress` | 最近任务状态 |
+| ✋ 停止任务 | `claude:stop` | 停止运行中任务 |
+| 🚪 退出桥接 | `claude:exit` | 清模型/计划/思考档/备援 |
+
+**模型增删**：只改 `config/models.json` 的 `modelSets.claude-cli` 与 `catalog`。Haiku / Small-Fast：`defaults.claudeHaikuModel`、`claudeSmallFastModel`。改完 `bash scripts/headless-daemon.sh restart`。
+
+**计划模式**：与 `--dangerously-skip-permissions` 互斥。规划轮只读；批准后同一 session `--resume` 再执行。
+
 ### 排版与出站
 
 - **调用约定（红线）**：外层 `chunkMessage` → **逐块** `sendFormattedMessage`；勿在内部再切块、勿改三路语义
@@ -261,7 +289,9 @@ node --check extension.mjs
 node --check lib/*.mjs
 ```
 
-热更：宿主支持时 `extensions_reload`，或重启承载会话 / App。
+热更：宿主支持时 `extensions_reload`，或重启承载会话 / App。无头：`bash scripts/headless-daemon.sh restart`。
+
+**同步方向**：本机扩展 → `sync-copilot-extensions.sh`（私有仓）→ `scripts/sync-to-open-source.sh`（开源镜像）。不要直接改开源目录。
 
 ### 改动纪律（近期踩坑）
 
@@ -276,4 +306,6 @@ node --check lib/*.mjs
 
 ## License
 
-MIT。维护与同步以 `AmazingDraw/copilot-telegram-bridge` 为准。
+## License
+
+MIT。本机先改 `AmazingDraw/copilot-telegram-bridge`，再 `bash scripts/sync-to-open-source.sh` 推开源镜像。开源不含提示词反推 Bot。

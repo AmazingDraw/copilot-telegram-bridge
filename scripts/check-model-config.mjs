@@ -53,6 +53,29 @@ for (const botsPath of [
     }
 }
 
+{
+    const setName = config.defaults.claudeModelSet;
+    assert(setName, "defaults.claudeModelSet is required");
+    const set = config.modelSets[setName];
+    assert(set, `defaults.claudeModelSet '${setName}' is missing from modelSets`);
+    const prefix = config.defaults.claudeModelPrefix || "cliproxy/";
+    const bare = (id) => {
+        let s = String(id || "").trim();
+        if (s.startsWith(prefix)) s = s.slice(prefix.length);
+        return s.replace(/\[.*\]$/, "");
+    };
+    const defaultId = bare(config.defaults.claudeDefaultModel || set.defaultModel);
+    const fallbackId = bare(config.defaults.claudeFallbackModel);
+    if (defaultId) {
+        assert(set.models.includes(defaultId), `claudeDefaultModel '${defaultId}' is not in modelSets.${setName}`);
+        assert(config.catalog[defaultId], `claudeDefaultModel '${defaultId}' is missing from catalog`);
+    }
+    if (fallbackId) {
+        assert(set.models.includes(fallbackId), `claudeFallbackModel '${fallbackId}' is not in modelSets.${setName}`);
+        assert(config.catalog[fallbackId], `claudeFallbackModel '${fallbackId}' is missing from catalog`);
+    }
+}
+
 // Legacy schema remains accepted for external HEADLESS_MODELS_CONFIG users.
 const legacy = normalizeModelsConfig({
     defaultModel: "legacy-model",

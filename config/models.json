@@ -6,7 +6,13 @@
     "maxContextWindowTokens": 200000,
     "codexWaitTimeoutMs": 3600000,
     "claudeWaitTimeoutMs": 3600000,
-    "claudeDefaultModel": "cliproxy/gemini-flash"
+    "claudeDefaultModel": "gemini-flash",
+    "claudeFallbackModel": "deepseek-v4-flash",
+    "claudeDefaultEffort": "",
+    "claudeModelSet": "claude-cli",
+    "claudeModelPrefix": "cliproxy/",
+    "claudeHaikuModel": "cliproxy/gemini-flash[1m]",
+    "claudeSmallFastModel": "cliproxy/gemini-flash[1m]"
   },
   "display": {
     "officialModels": {
@@ -56,6 +62,12 @@
       "maxPromptTokens": 1000000,
       "maxContextWindowTokens": 1000000,
       "maxOutputTokens": 32000
+    },
+    "gemini-flash": {
+      "label": "Gemini Flash",
+      "maxPromptTokens": 1000000,
+      "maxContextWindowTokens": 1000000,
+      "maxOutputTokens": 65536
     },
     "gemini-3.7-flash-high": {
       "label": "Gemini 3.7 Flash High",
@@ -143,6 +155,20 @@
     }
   },
   "modelSets": {
+    "claude-cli": {
+      "$comment": "/claude 模型菜单。增删只改这里；发给 CLI 的 slug = defaults.claudeModelPrefix + catalog id。",
+      "defaultModel": "gemini-flash",
+      "models": [
+        "gemini-flash",
+        "deepseek-v4-flash",
+        "deepseek-v4-pro",
+        "claude-sonnet-4-6",
+        "gemini-3.7-flash-high",
+        "cursor-grok-4.6-high",
+        "kimi-k3-high",
+        "kimi-k3-max"
+      ]
+    },
     "headless": {
       "$comment": "Headless 主 Bot 的有序模型列表；顺序同时用于 /model 与默认选择。",
       "defaultModel": "deepseek-v4-flash",

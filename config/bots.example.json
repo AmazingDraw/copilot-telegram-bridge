@@ -16,15 +16,5 @@
     "disabled": false,
     "label": "Headless",
     "skillSet": "headless"
-  },
-  "SecondaryBot": {
-    "token": "<YOUR_SECONDARY_BOT_TOKEN>",
-    "username": "YourSecondaryBot",
-    "addedAt": "2026-01-01T00:00:00.000Z",
-    "disabled": true,
-    "label": "SecondaryBot",
-    "role": "headless",
-    "profile": "prompt-reverse",
-    "modelSet": "prompt-reverse"
   }
 }

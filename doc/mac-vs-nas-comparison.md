@@ -59,7 +59,7 @@
 | 机器人标识 | 机器人定位 | Mac 版支持 | NAS 版支持 | 说明 |
 | :--- | :--- | :---: | :---: | :--- |
 | **`HuiCopilotCliBot`** | 纯无头全功能主力 Bot | ✅ | ✅（须停 Mac 后再开） | 同一 Token **只能一端轮询** |
-| **`SecondaryBotBot`** | 提示词反推专属 Bot | ✅ | ✅ | |
+| **`SecondaryBot`** | 提示词反推专属 Bot | ✅ | ✅ | |
 | **`Copilot` (Editor)** | 桌面编辑器联动 Bot | ✅ | ❌ | NAS 无桌面窗口 |
 
 ---
