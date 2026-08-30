@@ -24,10 +24,10 @@
     "agentsMd": "../agent-memory/AGENTS.md",
     "sessionState": "${HOME}/.copilot/session-state",
     "mcpConfig": "${HOME}/.copilot/mcp-config.json",
-    "codexAgentsDir": "${HOME}/.codex",
+    "codexAgentsDir": "${HOME}/.agents/workspace",
     "codexSessionDir": "${HOME}/.codex/sessions",
     "codexStateDir": "/tmp/telegram-bridge/codex",
-    "claudeWorkDir": "${HOME}",
+    "claudeWorkDir": "${HOME}/.agents/workspace",
     "claudeSessionDir": "${HOME}/.claude",
     "claudeStateDir": "/tmp/telegram-bridge/claude"
   },

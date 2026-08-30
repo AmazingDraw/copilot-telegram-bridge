@@ -163,7 +163,7 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 
 ### Codex 子命令（/codex）
 
-通过 Telegram 控制 **Codex CLI**（本地 `~/.codex`），支持新对话、续对话、进度、模型切换与异常智能诊断。
+通过 Telegram 控制 **Codex CLI**（配置/会话仍在 `~/.codex`，任务 cwd 为 `~/.agents/workspace`，与 `/claude` 相同）。
 
 ```bash
 /codex                    # 打开子命令菜单
