@@ -4,7 +4,8 @@
   "officialFallback": "cliproxy/deepseek-v4-flash",
   "defaults": {
     "maxContextWindowTokens": 200000,
-    "codexWaitTimeoutMs": 3600000
+    "codexWaitTimeoutMs": 3600000,
+    "claudeWaitTimeoutMs": 3600000
   },
   "display": {
     "officialModels": {
@@ -24,7 +25,10 @@
     "mcpConfig": "${HOME}/.copilot/mcp-config.json",
     "codexAgentsDir": "${HOME}/.codex",
     "codexSessionDir": "${HOME}/.codex/sessions",
-    "codexStateDir": "/tmp/cu-card/codex"
+    "codexStateDir": "/tmp/cu-card/codex",
+    "claudeAgentsDir": "${HOME}/.codex",
+    "claudeSessionDir": "${HOME}/.claude/sessions",
+    "claudeStateDir": "/tmp/cu-card/claude"
   },
   "launchAgentLabel": "com.copilot-telegram-bridge",
   "catalog": {

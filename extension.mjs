@@ -83,6 +83,7 @@ function buildTelegramBotMenu(opts = {}) {
         { command: "stop", description: "✋ 打断当前任务" },
         { command: "session", description: "📋 查看最近会话" },
         { command: "codex", description: "🤖 ChatGPT 交互" },
+        { command: "claude", description: "🤖 Claude 交互" },
         { command: "status", description: "📊 查看当前状态" },
         { command: "model", description: "🤖 切换 AI 模型" },
         { command: "mode", description: "🎮 切换交互模式" },
@@ -258,6 +259,10 @@ function createBotInstance(name, token, isHeadless, botRegistryEntry = {}, enabl
     let awaitingCodex = null;
     /** 当前对话已切换的 Codex 模型（仅本次会话生效；退出桥接后恢复默认） */
     let codexModel = "";
+    /** @type {{ chatId: number, mode: string, sessionId?: string, timer: ReturnType<typeof setTimeout>, startedAt: number } | null} */
+    let awaitingClaude = null;
+    /** 当前对话已切换的 Claude 模型（仅本次会话生效；退出桥接后恢复默认） */
+    let claudeModel = "";
     let connected = false;
     let isAgentBusy = false;
     let botInfo = null;
@@ -851,6 +856,10 @@ const ctx = {
     set awaitingCodex(v) { awaitingCodex = v; },
     get codexModel() { return codexModel; },
     set codexModel(v) { codexModel = v; },
+    get awaitingClaude() { return awaitingClaude; },
+    set awaitingClaude(v) { awaitingClaude = v; },
+    get claudeModel() { return claudeModel; },
+    set claudeModel(v) { claudeModel = v; },
     get isAgentBusy() { return isAgentBusy; },
     set isAgentBusy(v) { isAgentBusy = v; },
     get currentSessionId() { return currentSessionId; },
@@ -1017,6 +1026,10 @@ const {
     handleCodexCallback,
     tryConsumeCodexInput,
     handleCodexProgress,
+    handleClaudeCommand,
+    handleClaudeCallback,
+    tryConsumeClaudeInput,
+    handleClaudeProgress,
 } = attachCommands(ctx);
 
 // Late-bind command handlers for processUpdate (runtime closed over ctx)
@@ -1045,6 +1058,10 @@ Object.assign(ctx, {
     handleCodexCallback,
     tryConsumeCodexInput,
     handleCodexProgress,
+    handleClaudeCommand,
+    handleClaudeCallback,
+    tryConsumeClaudeInput,
+    handleClaudeProgress,
 });
 
 // bubbleActive / lastCompletedToolDesc live in runtime via defineProperty on ctx
