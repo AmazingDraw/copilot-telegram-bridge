@@ -189,7 +189,7 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 - **发图**：Codex 模式下直接发图片/文档 → `handleFileAttachment` 下载落盘 → `codex exec -i <path>`；无 caption 用默认提示词「请分析这张图片。」
 - **防卡后缀**：prompt 不再追加「任务完成后…」提示词（会污染历史标题）
 - **会话去重**：历史列表按 `session_meta.payload.session_id`（纯 UUID）去重；`codex exec resume` 必须用纯 UUID，文件名带时间戳前缀会被当新会话
-- **进度存储**：`/tmp/cu-card/codex/tasks.json`，任务完成自动裁剪至最新 50 条
+- **进度存储**：`/tmp/telegram-bridge/codex/tasks.json`，任务完成自动裁剪至最新 50 条
 
 ### 排版与出站
 

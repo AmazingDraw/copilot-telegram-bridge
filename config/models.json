@@ -26,10 +26,10 @@
     "mcpConfig": "${HOME}/.copilot/mcp-config.json",
     "codexAgentsDir": "${HOME}/.codex",
     "codexSessionDir": "${HOME}/.codex/sessions",
-    "codexStateDir": "/tmp/cu-card/codex",
-    "claudeAgentsDir": "${HOME}/.codex",
+    "codexStateDir": "/tmp/telegram-bridge/codex",
+    "claudeWorkDir": "${HOME}",
     "claudeSessionDir": "${HOME}/.claude",
-    "claudeStateDir": "/tmp/cu-card/claude"
+    "claudeStateDir": "/tmp/telegram-bridge/claude"
   },
   "launchAgentLabel": "com.copilot-telegram-bridge",
   "catalog": {
