@@ -199,7 +199,7 @@
     "headless": {
       "$comment": "Headless 系统提示词里的 skill 目录头白名单。bots.json 可用 skillSet / skillNames 覆盖；skillSet=all 表示不过滤。",
       "skills": [
-        "amazing-draw",
+        "codex",
         "ams-investing",
         "cli-proxy-api",
         "mac-vpn-ops",
