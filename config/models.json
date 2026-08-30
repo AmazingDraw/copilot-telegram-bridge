@@ -11,8 +11,8 @@
     "claudeDefaultEffort": "",
     "claudeModelSet": "claude-cli",
     "claudeModelPrefix": "cliproxy/",
-    "claudeHaikuModel": "cliproxy/gemini-flash[1m]",
-    "claudeSmallFastModel": "cliproxy/gemini-flash[1m]"
+    "claudeHaikuModel": "cliproxy/gemini-flash",
+    "claudeSmallFastModel": "cliproxy/gemini-flash"
   },
   "display": {
     "officialModels": {
