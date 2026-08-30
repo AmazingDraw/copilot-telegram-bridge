@@ -28,7 +28,7 @@
     "codexSessionDir": "${HOME}/.codex/sessions",
     "codexStateDir": "/tmp/cu-card/codex",
     "claudeAgentsDir": "${HOME}/.codex",
-    "claudeSessionDir": "${HOME}/.claude/sessions",
+    "claudeSessionDir": "${HOME}/.claude",
     "claudeStateDir": "/tmp/cu-card/claude"
   },
   "launchAgentLabel": "com.copilot-telegram-bridge",
