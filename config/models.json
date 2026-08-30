@@ -5,7 +5,8 @@
   "defaults": {
     "maxContextWindowTokens": 200000,
     "codexWaitTimeoutMs": 3600000,
-    "claudeWaitTimeoutMs": 3600000
+    "claudeWaitTimeoutMs": 3600000,
+    "claudeDefaultModel": "cliproxy/gemini-flash"
   },
   "display": {
     "officialModels": {
