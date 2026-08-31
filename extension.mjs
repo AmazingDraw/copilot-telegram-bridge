@@ -85,10 +85,9 @@ function buildTelegramBotMenu(opts = {}) {
         { command: "status", description: "📊 查看当前状态" },
         { command: "model", description: "🤖 切换 AI 模型" },
         { command: "mode", description: "🎮 切换交互模式" },
-        { command: "thinking", description: "🧠 切换思考等级" },
         { command: "rename", description: "✏️ 修改会话名称" },
         { command: "clean", description: "♻️ 清理历史会话" },
-        { command: "rich", description: "📐 表格富文本开关" },
+        { command: "rich", description: "📐 切换表格样式" },
     ];
     if (opts.includeReboot) {
         menu.push({ command: "reboot", description: "🧿 重启无头服务" });
