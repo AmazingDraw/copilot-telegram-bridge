@@ -11,8 +11,8 @@
     "claudeDefaultEffort": "",
     "claudeModelSet": "claude-cli",
     "claudeModelPrefix": "",
-    "claudeHaikuModel": "gemini-flash",
-    "claudeSmallFastModel": "gemini-flash"
+    "claudeHaikuModel": "cursor-auto",
+    "claudeSmallFastModel": "cursor-auto"
   },
   "display": {
     "officialModels": {
