@@ -6,7 +6,7 @@
     "maxContextWindowTokens": 200000,
     "codexWaitTimeoutMs": 3600000,
     "claudeWaitTimeoutMs": 3600000,
-    "claudeDefaultModel": "gemini-flash",
+    "claudeDefaultModel": "cursor-auto",
     "claudeFallbackModel": "deepseek-v4-flash",
     "claudeDefaultEffort": "",
     "claudeModelSet": "claude-cli",
@@ -157,7 +157,7 @@
   "modelSets": {
     "claude-cli": {
       "$comment": "/claude 模型菜单。增删只改这里；发给 CLI 的 slug 为 catalog id（直连 cliproxy，无 cliproxy/ 前缀）。",
-      "defaultModel": "gemini-flash",
+      "defaultModel": "cursor-auto",
       "models": [
         "gemini-flash",
         "deepseek-v4-flash",
