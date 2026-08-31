@@ -209,7 +209,7 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 | 🧠 切换模型 | `claude:model` | 列表来自 `config/models.json` → `modelSets.claude-cli` |
 | 🗺 计划 | `claude:plan` | `--permission-mode plan`；结束后「✅ 按计划执行」 |
 | ⚡️ 思考档 | `claude:effort` | `--effort`：低/中/高/极高/最大（💎） |
-| 🛟 备援模型 | `claude:fallback` | `--fallback-model` |
+| 🛟 备援模型 | `claude:fallback` | 主模型 429/配额耗尽后由 Bridge 换模型再跑一次（不走 Claude `--fallback-model`） |
 | 📡 实时 | `claude:stream` | `stream-json` 刷新进度 |
 | 📊 查看进度 | `claude:progress` | 最近任务状态 |
 | ✋ 停止任务 | `claude:stop` | 停止运行中任务 |
