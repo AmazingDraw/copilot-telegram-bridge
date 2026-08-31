@@ -42,7 +42,6 @@ import {
     sessionDirExists,
     isSessionResumable,
     getProtectedSessionIds as getProtectedSessionIdsFromFs,
-    isSessionDirInUse,
     isSafeEmptyUnnamedShell,
     listCleanableEmptyShells as listCleanableEmptyShellsFromFs,
     getRecentSessions,
@@ -1498,20 +1497,14 @@ async function registerSlashCommand(sess) {
                                 }
                             } else {
                                 const sticky = resolveHeadlessStickySessionId(name);
-                                if (sticky) {
-                                    if (isSessionDirInUse(sticky, [process.pid])) {
-                                        console.error(
-                                            `telegram-bridge: [${name}] sticky ${sticky} held by another process; will create new session`
-                                        );
-                                    } else if (!isSessionResumable(sticky)) {
-                                        console.error(
-                                            `telegram-bridge: [${name}] sticky ${sticky} not resumable yet (empty shell); will reuse id on create`
-                                        );
-                                    } else {
-                                        console.error(
-                                            `telegram-bridge: [${name}] sticky ${sticky} skipped by resume resolver; will try create`
-                                        );
-                                    }
+                                if (sticky && !isSessionResumable(sticky)) {
+                                    console.error(
+                                        `telegram-bridge: [${name}] sticky ${sticky} not resumable yet (empty shell); will reuse id on create`
+                                    );
+                                } else if (sticky) {
+                                    console.error(
+                                        `telegram-bridge: [${name}] sticky ${sticky} skipped by resume resolver; will try create`
+                                    );
                                 }
                             }
 
@@ -1522,13 +1515,7 @@ async function registerSlashCommand(sess) {
                                 if (stickyId) {
                                     // 空壳无法 resume，目录占同 id 会 create 失败 → 仅当安全空壳时删除后复用
                                     let canReuseSticky = true;
-                                    // 外进程占用（常见桌面 App）时禁止复用 sticky，避免双写卡死桌面
-                                    if (isSessionDirInUse(stickyId, [process.pid])) {
-                                        canReuseSticky = false;
-                                        console.error(
-                                            `telegram-bridge: [${name}] sticky ${stickyId} in use by another process; create with new id`
-                                        );
-                                    } else if (sessionDirExists(stickyId) && !isSessionResumable(stickyId)) {
+                                    if (sessionDirExists(stickyId) && !isSessionResumable(stickyId)) {
                                         try {
                                             const yamlPath = join(SESSION_STATE_DIR, stickyId, "workspace.yaml");
                                             let yamlContent = "";
