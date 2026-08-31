@@ -58,10 +58,11 @@ for (const botsPath of [
     assert(setName, "defaults.claudeModelSet is required");
     const set = config.modelSets[setName];
     assert(set, `defaults.claudeModelSet '${setName}' is missing from modelSets`);
-    const prefix = config.defaults.claudeModelPrefix || "cliproxy/";
+    const prefix = String(config.defaults.claudeModelPrefix || "");
     const bare = (id) => {
         let s = String(id || "").trim();
-        if (s.startsWith(prefix)) s = s.slice(prefix.length);
+        if (prefix && s.startsWith(prefix)) s = s.slice(prefix.length);
+        if (s.startsWith("cliproxy/")) s = s.slice("cliproxy/".length);
         return s.replace(/\[.*\]$/, "");
     };
     const defaultId = bare(config.defaults.claudeDefaultModel || set.defaultModel);

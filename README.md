@@ -195,7 +195,7 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 
 ### Claude 子命令（/claude）
 
-通过 Telegram 控制 **Claude Code CLI**（配置/会话仍在 `~/.claude`，任务 cwd 为 `~/.agents/workspace`）。走 OpenCodex `:10100`。
+通过 Telegram 控制 **Claude Code CLI**（配置/会话仍在 `~/.claude`，任务 cwd 为 `~/.agents/workspace`）。直连 CLI Proxy `:8317` 的 Anthropic `/v1/messages`。
 
 ```bash
 /claude                    # 打开子命令菜单
