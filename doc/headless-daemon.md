@@ -20,7 +20,7 @@ extension.mjs
 
 **硬依赖**：`runtime/` 成对 CLI+SDK · CLI Proxy `:8317` · `config/bots.json` token · `config/access.json`。
 
-换版本：`bash scripts/vendor-copilot-runtime.sh`（从本机 Caches 再拷一份；App 已卸则手工放入 `runtime/<ver>/`）。
+换版本：见 [`../runtime/README.md`](../runtime/README.md)。本机最稳是临时装回 Copilot.app 解包后跑 `vendor-copilot-runtime.sh`，再 `headless-daemon.sh restart`。npm/brew CLI 不够。
 
 ---
 
@@ -76,7 +76,7 @@ extension.mjs
 | CLI | `runtime/<ver>/cli/copilot` |
 | pkg / bootstrap / SDK | `runtime/<ver>/pkg/` |
 
-`status` 的 `align=vendored:<ver>` 为命中。npm/brew 单独装的 CLI **不能**替代这套布局。
+`status` 的 `align=vendored:<ver>` 为命中。npm/brew 单独装的 CLI **不能**替代这套布局（缺 bootstrap 与整包 `pkg/`）。升级步骤见 [`../runtime/README.md`](../runtime/README.md)。
 
 bootstrap 的 parent-pid 软化打在 **vendored 副本** 上，不再改 Caches。
 

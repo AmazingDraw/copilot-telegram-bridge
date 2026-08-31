@@ -135,7 +135,7 @@ createBotInstance(name, token)
 
 **不依赖 GitHub Copilot 桌面 App。** 进程只靠 `runtime/` 里钉死的 CLI + bootstrap；第三方模型走 CLI Proxy 8317。
 
-换 CLI 版本：`bash scripts/vendor-copilot-runtime.sh`（有本机 Caches 就拷成对文件；没有则手工放入 `runtime/<ver>/`）。
+换 CLI/SDK 版本：临时装回 Copilot.app 解包后 `bash scripts/vendor-copilot-runtime.sh`，再 restart。说明见 [`runtime/README.md`](runtime/README.md)。npm/brew CLI 不够。
 
 ```bash
 # 一次性安装（登录即启 + 崩溃自动拉起）
