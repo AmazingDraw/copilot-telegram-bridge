@@ -228,7 +228,7 @@
   },
   "skillSets": {
     "headless": {
-      "$comment": "Headless 系统提示词里的 skill 目录头白名单。bots.json 可用 skillSet / skillNames 覆盖；skillSet=all 表示不过滤。",
+      "$comment": "可选白名单。bots.json 的 skillSet=all（默认）不过滤；写 skillSet 名才套用本组。",
       "skills": [
         "codex",
         "ams-investing",

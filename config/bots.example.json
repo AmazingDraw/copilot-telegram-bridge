@@ -15,6 +15,6 @@
     "role": "headless",
     "disabled": false,
     "label": "Headless",
-    "skillSet": "headless"
+    "skillSet": "all"
   }
 }
