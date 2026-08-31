@@ -227,18 +227,7 @@
     }
   },
   "skillSets": {
-    "headless": {
-      "$comment": "可选白名单。bots.json 的 skillSet=all（默认）不过滤；写 skillSet 名才套用本组。",
-      "skills": [
-        "codex",
-        "ams-investing",
-        "cli-proxy-api",
-        "mac-vpn-ops",
-        "translator",
-        "pdf-ops",
-        "kimi-webbridge"
-      ]
-    }
+    "$comment": "可选白名单，空则不过滤。bots.json 写 skillSet 名才套用本组。"
   },
   "providers": [
     {
