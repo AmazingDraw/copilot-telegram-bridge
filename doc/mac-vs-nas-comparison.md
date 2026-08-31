@@ -46,8 +46,8 @@
 | 对比维度 | Mac 桌面版 (`com.copilot-telegram-bridge`) | NAS 容器版 (`copilot-bridge`) | 说明 |
 | :--- | :--- | :--- | :--- |
 | **宿主环境** | macOS / Apple Silicon (ARM64) | 华硕 AS6602T / Intel J4125 (Linux AMD64) | NAS 低功耗适合常驻，启动崩已修，容器按令停止以免 409 |
-| **运行模式** | `mode=all`（Editor + Headless）或 Headless 独立守护 | **`mode=headless-only`** | NAS 无桌面 Editor |
-| **桌面 GUI 依赖** | Editor 依赖 Copilot.app；Headless 守护不依赖窗口 | 无 GUI | **Mac 关机后 NAS Bot 不会自动顶上**：helper 冷启动要 `17890`；wlan0 掉了要 `/usr/sbin/netman start_wifi`；要 NAS 值班须先停 Mac Headless 再 `docker start copilot-bridge` |
+| **运行模式** | LaunchAgent `headless-only`（`runtime/` 钉死 CLI） | **`headless-only` 容器** | 两端都无桌面 Editor |
+| **桌面 GUI 依赖** | 不依赖 Copilot.app | 无 GUI | **Mac 关机后 NAS Bot 不会自动顶上**：helper 冷启动要 `17890`；wlan0 掉了要 `/usr/sbin/netman start_wifi`；要 NAS 值班须先停 Mac Headless 再 `docker start copilot-bridge` |
 | **出站网络** | Mac Stash `127.0.0.1:7890` | helper **US `7212`**（数据面出 **wlan0**） | **不是**「点一次 GLaDOS 就永久独立」。握手仍走 Mac `:17890` |
 | **模型后端** | 指针：本机 `127.0.0.1:8317` **或** 铜线 `169.254.1.2:8317` | 容器内永远 `127.0.0.1:8317` | Mac 侧随时可切；NAS 不稳用 `switch-cliproxy-backend.sh mac` |
 | **进程守护** | LaunchAgent `gui/501` KeepAlive | Docker（当前 `restart=no`，Mac 值班） | NAS 要值班再改回 `unless-stopped` |

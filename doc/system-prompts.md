@@ -40,7 +40,7 @@
 
 ## 3. SDK 内置 section（12 个，含组）
 
-`SystemMessageSection`（Copilot.app SDK `types.d.ts`）实际是 **12** 个，不是 11。其中 **`identity` 是组**，不是单独一段正文：`remove identity` 会连带拆掉组内 sibling（`tone`、`tool_efficiency` 等），除非对组员标 `"preserve"`。
+`SystemMessageSection`（vendored SDK `runtime/<ver>/pkg/copilot-sdk` 的 `types.d.ts`）实际是 **12** 个，不是 11。其中 **`identity` 是组**，不是单独一段正文：`remove identity` 会连带拆掉组内 sibling（`tone`、`tool_efficiency` 等），除非对组员标 `"preserve"`。
 
 | Section | 作用 | Headless customize 取舍 |
 | :--- | :--- | :--- |
@@ -74,7 +74,6 @@
 | `/new` | `createSession` | ✅ |
 | **`/model` 换模型** | 同 `sessionId` 再 `resumeSession`（不是裸 `switchTo`） | ✅ |
 | 普通消息 / `/stop` | `send` / `abort` | ❌ |
-| 桌面 Editor `joinSession` | 已移除 | — |
 
 `/model` 若只 `rpc.model.switchTo`，系统提示词不会重建。无头因此改为 resume 当前会话，并把目标模型写进 `SessionConfig.model`。
 

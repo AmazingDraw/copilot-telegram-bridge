@@ -63,6 +63,7 @@ config/models.json
 ```
 
 - `headless`：主无头 Bot 列表与排序。
+- `claude-cli`：`/claude` 模型菜单。
 - `rollback-*`：各备用 provider 的模型子集。
 - 其他命名组：供单 Bot `modelSet` 引用。
 

@@ -1,7 +1,7 @@
 # 无头 Bot（Headless）运行机制
 
 > 扩展：`~/.copilot/extensions/copilot-telegram-bridge`  
-> 对照：[`editor-bot.md`](./editor-bot.md) · 模型：[`models-config.md`](./models-config.md) · 人设：[`system-prompts.md`](./system-prompts.md)
+> 模型：[`models-config.md`](./models-config.md) · 人设：[`system-prompts.md`](./system-prompts.md) · runtime：[`../runtime/README.md`](../runtime/README.md)
 
 无头主路径是 **LaunchAgent 常驻守护**，**不依赖 GitHub Copilot 桌面 App**。CLI / SDK / bootstrap 钉在扩展目录 `runtime/`（见 [`../runtime/README.md`](../runtime/README.md)）。
 
@@ -28,10 +28,10 @@ extension.mjs
 
 | 变量 | 守护取值 | 作用 |
 | :--- | :--- | :--- |
-| `TELEGRAM_BRIDGE_MODE` | `headless-only` | 只起无头，跳过 editor |
+| `TELEGRAM_BRIDGE_MODE` | `headless-only` | 脚本仍写入；其它值会被忽略 |
 | `EXTENSION_PATH` | `…/copilot-telegram-bridge/extension.mjs` | 扩展入口 |
-| `COPILOT_SDK_PATH` | `~/Library/Caches/copilot/pkg/…/copilot-sdk` | SDK |
-| `COPILOT_CLI_PATH` | 缓存里的 `copilot` | CLI |
+| `COPILOT_SDK_PATH` | `runtime/<ver>/pkg/copilot-sdk` | SDK |
+| `COPILOT_CLI_PATH` | `runtime/<ver>/cli/copilot` | CLI |
 | `SESSION_ID` | `headless-daemon` | **宿主**会话名，不是业务 sticky UUID |
 
 `bots.json` 的 `role` 只认 `headless`。`editor` 启动时跳过。
@@ -48,9 +48,8 @@ extension.mjs
 
 | 己方 | 对方仍存活 | 结果 |
 | :--- | :--- | :--- |
-| `daemon` | `app` | 可抢（`preferSteal`） |
 | `daemon` | `daemon` | 不抢 |
-| `app` | `daemon` | 不抢（standby） |
+| `daemon` | 历史 `app` leader | 可抢（`preferSteal`） |
 | 任意 | 对方 pid 已死 | 覆盖 |
 
 写入后双读确认。`refreshHeadlessLeadership` 失败则让位。
@@ -87,7 +86,7 @@ bootstrap 的 parent-pid 软化打在 **vendored 副本** 上，不再改 Caches
 
 细节以专文为准，这里只列无头差异：
 
-* 会话：SDK `createSession` / `resumeSession`，不是桌面 `joinSession`。
+* 会话：SDK `createSession` / `resumeSession`。
 * 模型：`config/models.json`（`catalog` + `modelSets.headless` + cliproxy）。改完 `check-model-config.mjs --live` 再 `restart`。见 [`models-config.md`](./models-config.md)。
 * 人设 / MCP / Skills：create、resume、`/session`、`/new`、`/model` 重注入。见 [`system-prompts.md`](./system-prompts.md)。`enableConfigDiscovery` **不开**。
 * 权限：默认 allow-all（`setAllowAll` + `approve-once`）。`deny-all`（如 SecondaryBot）拒绝工具且默认不加载 MCP。
@@ -129,26 +128,13 @@ tail -50 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log
 
 ---
 
-## 6. 与桌面 Editor
-
-| | Editor | Headless 守护 |
-| :--- | :--- | :--- |
-| 宿主 | Copilot App 会话内扩展 | launchd → CLI + bootstrap |
-| 会话 | 当前桌面 session | create/resume + sticky UUID |
-| 模型 | 桌面会话列表 | `modelSets.headless` + 8317 |
-| Leader | `app`，让位 daemon | `daemon`，可抢 app |
-
-不要两边同时 poll 同一个 bot。对照表详见 [`editor-bot.md`](./editor-bot.md)。
-
----
-
-## 7. 故障速查
+## 6. 故障速查
 
 | 现象 | 优先查 |
 | :--- | :--- |
 | 开机后无头不回 | `status` / `launchctl print`；是否在登录 gui 会话；`daemon.log` |
-| `copilot CLI not found` / bootstrap missing | §3 缓存；打开一次桌面 App |
-| 约两条后停、且只有 App 内 headless | 没走守护或 leader 被 app 占 → `install`，确认 `mode=daemon` |
+| `copilot CLI not found` / bootstrap missing | `runtime/VERSION` 与 `runtime/<ver>/` 是否成对；补 `vendor-copilot-runtime.sh` |
+| 约两条后停 | 没走守护或 leader 被占 → `install`，确认 `mode=daemon` |
 | poll `fetch failed` | 本机网络 / 代理；**勿改 Stash**，先报主人 |
 | `setMyName` Rate limited | `state.lastSetMyName` 同名跳过；改 `bots.json` label 才会再调 |
 | 401 / 模型列表空 | cli-proxy-api 是否起、key 是否失效 |
@@ -161,7 +147,7 @@ tail -50 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log
 
 ---
 
-## 8. 路径
+## 7. 路径
 
 ```text
 ~/.copilot/extensions/copilot-telegram-bridge/
@@ -172,7 +158,14 @@ tail -50 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log
 ~/.copilot/mcp-config.json
 ../agent-memory/{AGENTS,prompt-reverse}.md
 ~/Library/LaunchAgents/com.copilot-telegram-bridge.plist
+runtime/<ver>/cli/copilot
+runtime/<ver>/pkg/{preloads,copilot-sdk}
+~/.cli-proxy-api/          # :8317，独立 LaunchAgent
+```
+
+换版本若本机还有 Caches，可作 `vendor-copilot-runtime.sh` 的拷贝源（不是运行时路径）：
+
+```text
 ~/Library/Caches/github-copilot-sdk/cli/<ver>/copilot
 ~/Library/Caches/copilot/pkg/darwin-arm64/<ver>/{preloads,copilot-sdk}
-~/.cli-proxy-api/          # :8317，独立 LaunchAgent
 ```

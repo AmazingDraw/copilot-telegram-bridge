@@ -21,14 +21,13 @@
 | Registry key | 角色 | 说明 |
 | :--- | :--- | :--- |
 | `Headless` | **无头主 bot** | `createSession` / `resumeSession`；BYOK + 用户 MCP；allow-all |
-| `SecondaryBot` | **专用无头** | 专用单模型策略；open-group / deny-all |
+| `SecondaryBot` | **专用无头** | 提示词反推；open-group / deny-all（开源镜像不含此 Bot） |
 
 - 注册表：`config/bots.json`（token 明文、**不进 Git**）
 - 每 bot 独立目录：`bots/<Name>/`（lock / state / leader）
 - 开关：`bots.json` 各 bot 的 `disabled`（`true` 则跳过；热重载需重启 Headless 守护）
-- 角色：只支持 `headless`。`role: editor` / 旧 joinbot 启动时跳过。
-- 专文：[`headless-daemon.md`](doc/headless-daemon.md) · [`models-config.md`](doc/models-config.md) · joinbot 已移除见 [`editor-bot.md`](doc/editor-bot.md)
-- 系统提示词定制与裁剪：[`system-prompts.md`](doc/system-prompts.md)
+- 角色：只认 `headless`。遗留 `role: editor` 启动时跳过。
+- 专文：[`headless-daemon.md`](doc/headless-daemon.md) · [`models-config.md`](doc/models-config.md) · [`system-prompts.md`](doc/system-prompts.md)
 
 ### 模块拆分
 
@@ -48,6 +47,8 @@ lib/
   bot-runtime.mjs      # sendQueue、typing、tool bubble、processUpdate、poll/lock
   bot-handlers.mjs     # session 事件 → TG；permission / ask_user 工厂
   bot-commands.mjs     # /session /clean /model /mode 与 callback
+  claude-commands.mjs  # /claude 子菜单 · FIFO
+  codex-commands.mjs   # /codex 子菜单 · FIFO
 config/models.json     # 模型唯一真源：catalog / modelSets / provider
 ../agent-memory/       # 人设真源：AGENTS.md
 ```
@@ -55,7 +56,7 @@ config/models.json     # 模型唯一真源：catalog / modelSets / provider
 ### 装配顺序（每个 Bot 实例）
 
 ```
-createBotInstance(name, token, isHeadless)
+createBotInstance(name, token)
   → 构造 ctx（getter 防闭包 stale）
   → attachRuntime(ctx)     # queue / typing / bubble / processUpdate / poll
   → access + pairing       # 仍在主文件
@@ -83,8 +84,8 @@ createBotInstance(name, token, isHeadless)
 ### 连接与冲突
 
 - **Long poll** + 启动前 `deleteWebhook`，避免 webhook/409 空转
-- **Lock**：他会话接管时 409 → 优雅释放 typing/bubble/token；桌面 **lock poller / autoConnect** 仅认领 `pid: 0` 占位锁，且走 **O_EXCL claim 门闩** 原子认领
-- **无头 leader**：多桌面扩展实例时只允许一个 Headless 建会话
+- **Lock**：`bots/<Name>/lock.json` 记录本进程持有的 session；同 token 第二实例会 409，释放 typing/bubble
+- **无头 leader**：同一 bot 只允许一个存活循环建会话
 - **Sticky session**：优先 `resume` 可 resume 的 id；仅空壳则安全删壳后 **同 id create**
 
 ### 会话运维（Telegram）
@@ -102,10 +103,6 @@ createBotInstance(name, token, isHeadless)
 | `/rich` | 表格：`on`＝富文本 HTML 表；`off`（**默认**）＝列表 HTML |
 
 **可 resume 判定**（`session-fs.isSessionResumable`）：有 `session.db` 或非空 `events.jsonl`。仅 `workspace.yaml` 的 sdk 空壳不进 `/session` 列表。
-
-### 桌面 Editor Bot（已移除）
-
-`joinSession` / lock handoff 已删除。说明见 [`editor-bot.md`](doc/editor-bot.md)。
 
 ### Headless BYOK（CLI Proxy 默认上游）
 
@@ -138,7 +135,7 @@ createBotInstance(name, token, isHeadless)
 
 **不依赖 GitHub Copilot 桌面 App。** 进程只靠 `runtime/` 里钉死的 CLI + bootstrap；第三方模型走 CLI Proxy 8317。
 
-换 CLI 版本：`bash scripts/vendor-copilot-runtime.sh`（需当时仍能读到 App 缓存，或手动把成对文件放进 `runtime/<ver>/`）。
+换 CLI 版本：`bash scripts/vendor-copilot-runtime.sh`（有本机 Caches 就拷成对文件；没有则手工放入 `runtime/<ver>/`）。
 
 ```bash
 # 一次性安装（登录即启 + 崩溃自动拉起）
@@ -248,7 +245,7 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 2. CLI / 会话内：
 
 ```text
-/telegram setup <Name>     # 如 Copilot / Headless；名允许 [A-Za-z0-9_-]
+/telegram setup <Name>     # 如 Headless；名允许 [A-Za-z0-9_-]
 # 粘贴 token
 /telegram connect <Name>
 ```
@@ -298,8 +295,6 @@ node --check lib/*.mjs
 6. 隐藏回归：`lib` 用到的 `basename` 等必须在本模块 `import`
 
 ---
-
-## License
 
 ## License
 

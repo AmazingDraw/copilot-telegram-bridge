@@ -11,7 +11,7 @@
 | Claude CLI（`/claude`） | `modelSets.claude-cli` + catalog id | 改 set / catalog 后重启 daemon |
 | Codex CLI（`/codex`） | `~/.codex` 与生成 catalog | 由 Codex / `ocx sync` 管理 |
 
-无桌面 Copilot.app，不再维护 `~/.copilot/data.db` 窗口补丁。
+无头会话不读 `~/.copilot/data.db`；窗口只走 catalog → SDK。
 
 ## 2. 为什么自定义模型常回落 128K
 
