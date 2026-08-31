@@ -156,7 +156,7 @@ tail -50 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log
   bots/Headless/{daemon.pid,daemon.log,headless.leader.json,lock.json,state.json}
 
 ~/.copilot/mcp-config.json
-../agent-memory/{AGENTS,prompt-reverse}.md
+memory/{AGENTS,PROMPT_REVERSE}.md
 ~/Library/LaunchAgents/com.copilot-telegram-bridge.plist
 runtime/<ver>/cli/copilot
 runtime/<ver>/pkg/{preloads,copilot-sdk}

@@ -50,7 +50,7 @@ lib/
   claude-commands.mjs  # /claude 子菜单 · FIFO
   codex-commands.mjs   # /codex 子菜单 · FIFO
 config/models.json     # 模型唯一真源：catalog / modelSets / provider
-../agent-memory/       # 人设真源：AGENTS.md
+memory/                # 人设真源：AGENTS.md（仅本机仓，不开源）
 ```
 
 ### 装配顺序（每个 Bot 实例）

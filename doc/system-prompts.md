@@ -19,7 +19,7 @@
 │    • 用户 MCP 工具定义                                  │
 ├────────────────────────────────────────────────────────┤
 │ 3. 用户/业务指令 (1k~4k tokens)                         │
-│    • AGENTS.md / prompt-reverse.md / 自定义人设         │
+│    • AGENTS.md / PROMPT_REVERSE.md / 自定义人设         │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -86,7 +86,7 @@
   "SecondaryBot": {
     "role": "headless",
     "profile": "prompt-reverse",
-    "agentsMd": "../agent-memory/prompt-reverse.md",
+    "agentsMd": "memory/PROMPT_REVERSE.md",
     "permissionMode": "deny-all",
     "loadMcp": false,
     "loadSkills": false,
@@ -111,7 +111,7 @@
 
 * `systemMessageMode`: `"customize"`（上表裁剪 + 末尾 AGENTS.md）
 * `loadSkills` / `loadMcp`: `true`
-* `agentsMd`: 全局 `AGENTS.md`
+* `agentsMd`: `memory/AGENTS.md`
 
 ### SecondaryBot（看图反推）
 

@@ -27,7 +27,7 @@
   },
   "paths": {
     "cliproxyConfig": "${HOME}/.cli-proxy-api/config.yaml",
-    "agentsMd": "../agent-memory/AGENTS.md",
+    "agentsMd": "memory/AGENTS.md",
     "sessionState": "${HOME}/.copilot/session-state",
     "mcpConfig": "${HOME}/.copilot/mcp-config.json",
     "codexAgentsDir": "${HOME}/.agents/workspace",

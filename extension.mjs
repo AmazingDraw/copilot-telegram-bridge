@@ -1437,7 +1437,7 @@ async function registerSlashCommand(sess) {
                                 console.error(`telegram-bridge: [${name}] listModels failed:`, listErr.message);
                             }
 
-                            // per-bot agentsMd 优先，否则 models.json paths.agentsMd（默认 agent-memory/AGENTS.md）
+                            // per-bot agentsMd 优先，否则 models.json paths.agentsMd（默认 memory/AGENTS.md）
                             const customInstructions = loadAgentsFromPath(
                                 botProfile.agentsMd,
                                 () => loadAgentsMdInstructions()
