@@ -48,7 +48,7 @@ lib/
   bot-runtime.mjs      # sendQueue、typing、tool bubble、processUpdate、poll/lock
   bot-handlers.mjs     # session 事件 → TG；permission / ask_user 工厂
   bot-commands.mjs     # /session /clean /model /mode 与 callback
-config/models.json     # 模型唯一真源：catalog / modelSets / provider / fixctx
+config/models.json     # 模型唯一真源：catalog / modelSets / provider
 ../agent-memory/       # 人设真源：AGENTS.md
 ```
 
@@ -126,7 +126,7 @@ createBotInstance(name, token, isHeadless)
 
 **per-bot 模型锁**（`bots.json`）：推荐只写 `modelSet`；旧 `defaultModel` / `allowedModels` 仍兼容。
 
-**上下文窗口**：规格统一存于 `config/models.json`；无头直接读取，桌面 `data.db` 与 OpenCodex 配置由 `/fixctx` 应用。详见 [`custom-models-context.md`](doc/custom-models-context.md)。
+**上下文窗口**：规格统一存于 `config/models.json`；无头 create/resume 时写入 SDK。详见 [`custom-models-context.md`](doc/custom-models-context.md)。
 
 ### 用户 MCP（无头显式加载）
 

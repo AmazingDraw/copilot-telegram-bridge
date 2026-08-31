@@ -90,7 +90,6 @@ function buildTelegramBotMenu(opts = {}) {
         { command: "rename", description: "✏️ 修改会话名称" },
         { command: "clean", description: "♻️ 清理历史会话" },
         { command: "rich", description: "📐 表格富文本开关" },
-        { command: "fixctx", description: "🔧 修复模型上下文" },
     ];
     if (opts.includeReboot) {
         menu.push({ command: "reboot", description: "🧿 重启无头服务" });

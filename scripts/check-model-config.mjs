@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -31,14 +30,6 @@ for (const provider of config.providers) {
         expected,
         `provider ${provider.id} did not expand its modelSet in order`,
     );
-}
-
-const fixctx = config.modelSets.fixctx;
-assert(fixctx, "modelSets.fixctx is required");
-for (const id of fixctx.models) {
-    const model = config.catalog[id];
-    assert(model?.maxPromptTokens, `catalog.${id}.maxPromptTokens is required by fixctx`);
-    assert(model?.maxOutputTokens, `catalog.${id}.maxOutputTokens is required by fixctx`);
 }
 
 for (const botsPath of [
@@ -123,14 +114,6 @@ assert.throws(
     /must reference a modelSet in schema v2/,
 );
 
-if (!process.argv.includes("--skip-fixctx-fixture")) {
-    execFileSync(
-        "python3",
-        [join(BRIDGE_ROOT, "scripts", "test-fixctx.py"), rawPath],
-        { stdio: "inherit" },
-    );
-}
-
 if (live) {
     for (const provider of config.providers.filter((item) => item.enabled !== false)) {
         const resolved = await resolveProviderCatalog(provider, {
@@ -151,6 +134,6 @@ const activeCount = config.providers
     .reduce((sum, provider) => sum + provider.models.length, 0);
 console.log(
     `model config OK: catalog=${Object.keys(config.catalog).length} ` +
-    `sets=${Object.keys(config.modelSets).length} active=${activeCount} ` +
-    `fixctx=${fixctx.models.length}${live ? " live=ok" : ""}`,
+    `sets=${Object.keys(config.modelSets).length} active=${activeCount}` +
+    `${live ? " live=ok" : ""}`,
 );

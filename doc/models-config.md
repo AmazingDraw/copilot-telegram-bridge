@@ -1,6 +1,6 @@
 # 模型管理手册（单一真源）
 
-> Bridge 的模型 ID、窗口、排序、Headless 列表、回滚列表、`/fixctx` 规格与单 Bot 模型组，唯一真源都是 `config/models.json`。
+> Bridge 的模型 ID、窗口、排序、Headless 列表、回滚列表与单 Bot 模型组，唯一真源都是 `config/models.json`。
 > 修改后运行校验并重启 Headless；不要再到代码或文档里复制模型清单。
 
 ## 1. 文件结构
@@ -20,7 +20,6 @@ config/models.json
 - `modelSets.headless.models` 的顺序就是 Headless `/model` 顺序。
 - `modelSets.<name>.defaultModel` 必须属于该组。
 - `providers[]` 只保存 URL、密钥来源和 `modelSet` 引用。
-- `modelSets.fixctx` 决定 `/fixctx` 修复哪些模型。
 - `bots.json` 推荐只保存 `modelSet` 名，不直接保存模型 ID。
 - `skillSets.<name>` 是可选的 Headless skill 白名单。默认 `skillSet=all` 不过滤；`bots.json` 可写 `skillSet` 或 `skillNames` 收窄。
 
@@ -33,28 +32,20 @@ config/models.json
     "enabled": true,
     "maxPromptTokens": 1000000,
     "maxContextWindowTokens": 1000000,
-    "maxOutputTokens": 32000,
-    "fixctx": {
-      "copilotPromptTokens": 1000000,
-      "copilotOutputTokens": 32000
-    }
+    "maxOutputTokens": 32000
   }
 }
 ```
-
-`fixctx` 是可选的；只有 Copilot 修复值需要与 `maxPromptTokens` / `maxOutputTokens` 不同时才写。
 
 字段说明：
 
 | 字段 | 作用 |
 | :--- | :--- |
-| `label` | `/fixctx` 日志显示名 |
+| `label` | Telegram `/model` 显示名 |
 | `enabled` | 显式 `false` 时从所有 provider 展开结果中排除 |
-| `maxPromptTokens` | Headless SDK prompt 上限，也是 Copilot 修复默认值 |
+| `maxPromptTokens` | Headless SDK prompt 上限 |
 | `maxContextWindowTokens` | Headless SDK 总窗口 |
-| `maxOutputTokens` | Headless SDK输出上限，也是 Copilot 修复默认值 |
-| `fixctx.copilotPromptTokens` | 可选；覆盖 Copilot prompt 修复值 |
-| `fixctx.copilotOutputTokens` | 可选；覆盖 Copilot output 修复值 |
+| `maxOutputTokens` | Headless SDK 输出上限 |
 
 ## 3. Model Sets
 
@@ -63,9 +54,6 @@ config/models.json
   "headless": {
     "defaultModel": "<model-id>",
     "models": ["<model-id>", "<another-model-id>"]
-  },
-  "fixctx": {
-    "models": ["<model-id>"]
   },
   "single-purpose-bot": {
     "defaultModel": "<model-id>",
@@ -76,7 +64,6 @@ config/models.json
 
 - `headless`：主无头 Bot 列表与排序。
 - `rollback-*`：各备用 provider 的模型子集。
-- `fixctx`：Copilot 桌面 SQLite 上下文修复目标。
 - 其他命名组：供单 Bot `modelSet` 引用。
 
 同一个模型可以属于多个组，但规格只在 `catalog` 写一次。
@@ -109,15 +96,14 @@ apiKeyEnv → apiKeyFromFile → apiKeyFromCliproxyYaml
 
 1. 在 `catalog` 新增一个模型条目。
 2. 把 ID 加入需要的 `modelSets`。
-3. 如果需要 `/fixctx`，把 ID 加入 `modelSets.fixctx`；默认复用 `maxPromptTokens` / `maxOutputTokens`，需要不同值才写 `fixctx`。
-4. 运行：
+3. 运行：
 
 ```bash
 node scripts/check-model-config.mjs --live
 bash scripts/headless-daemon.sh restart
 ```
 
-无需修改 `lib/byok-providers.mjs`、`fix-model-tokens.sh` 或文档模型列表。
+无需修改 `lib/byok-providers.mjs` 或文档模型列表。
 
 ### 5.2 禁用或删除模型
 
@@ -136,13 +122,7 @@ bash scripts/headless-daemon.sh restart
 ### 5.4 修改上下文
 
 - Headless：改 `catalog.<id>.max*Tokens`，重启 daemon。
-- Copilot 桌面：执行 `/fixctx` 或脚本；只有 Copilot 值不同才改同条目的 `fixctx`。
-
-```bash
-bash scripts/fix-model-tokens.sh
-```
-
-脚本通过 `FIXCTX_MODELS_CONFIG` 支持测试配置覆盖，默认读取 Bridge 自身的 `config/models.json`。
+- 旧会话通常缓存了窗口，需 `/new` 再开 session。
 
 ## 6. 校验与排障
 
@@ -155,7 +135,6 @@ node scripts/check-model-config.mjs --live
 
 # 语法检查
 python3 -m json.tool config/models.json >/dev/null
-bash -n scripts/fix-model-tokens.sh
 
 # 生效
 bash scripts/headless-daemon.sh restart
@@ -179,7 +158,6 @@ bash scripts/headless-daemon.sh restart
 | :--- | :--- | :--- |
 | 唯一模型真源 | `config/models.json` | 人工维护 |
 | Bot token 与 modelSet 引用 | `config/bots.json` | 本机私密配置 |
-| Copilot 模型表 | `~/.copilot/data.db` | `/fixctx` 生成/修复 |
 | Codex catalog | `~/.codex/opencodex-catalog.json` | `ocx sync` 生成 |
 
 生成产物不能反向作为 Bridge allowlist。

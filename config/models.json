@@ -1,5 +1,5 @@
 {
-  "$comment": "Bridge 模型单一真源。模型规格只写入 catalog；Headless、回滚 provider、/fixctx 与单 Bot 策略通过 modelSets 引用。改完后运行 bash scripts/headless-daemon.sh restart。密钥不写这里，走 env / apiKeyFromFile / cliproxy yaml。覆盖路径：HEADLESS_MODELS_CONFIG；/fixctx 覆盖路径：FIXCTX_MODELS_CONFIG。",
+  "$comment": "Bridge 模型单一真源。模型规格只写入 catalog；Headless、回滚 provider 与单 Bot 策略通过 modelSets 引用。改完后运行 bash scripts/headless-daemon.sh restart。密钥不写这里，走 env / apiKeyFromFile / cliproxy yaml。覆盖路径：HEADLESS_MODELS_CONFIG。",
   "schemaVersion": 2,
   "officialFallback": "cliproxy/deepseek-v4-flash",
   "defaults": {
@@ -197,25 +197,6 @@
       "models": [
         "deepseek-v4-flash",
         "deepseek-v4-pro"
-      ]
-    },
-    "fixctx": {
-      "$comment": "Copilot data.db 的修复目标。",
-      "models": [
-        "cursor-auto",
-        "cursor-grok-4.6-low",
-        "cursor-grok-4.6-medium",
-        "cursor-grok-4.6-high",
-        "composer-2.5",
-        "deepseek-v4-flash",
-        "deepseek-v4-pro",
-        "mimo-v2.5",
-        "mimo-v2.5-pro",
-        "kimi-k3-low",
-        "kimi-k3-high",
-        "kimi-k3-max",
-        "claude-sonnet-4-6",
-        "gemini-flash"
       ]
     },
     "prompt-reverse": {
