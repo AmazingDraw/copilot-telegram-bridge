@@ -83,7 +83,7 @@ function buildTelegramBotMenu(opts = {}) {
         { command: "codex", description: "🤖 ChatGPT 交互" },
         { command: "claude", description: "🤖 Claude 交互" },
         { command: "status", description: "📊 查看当前状态" },
-        { command: "model", description: "🤖 切换 AI 模型" },
+        { command: "model", description: "✴️ 切换 AI 模型" },
         { command: "mode", description: "🎮 切换交互模式" },
         { command: "rename", description: "✏️ 修改会话名称" },
         { command: "clean", description: "♻️ 清理历史会话" },
