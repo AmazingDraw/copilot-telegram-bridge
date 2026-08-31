@@ -74,7 +74,7 @@
 | `/new` | `createSession` | ✅ |
 | **`/model` 换模型** | 同 `sessionId` 再 `resumeSession`（不是裸 `switchTo`） | ✅ |
 | 普通消息 / `/stop` | `send` / `abort` | ❌ |
-| 桌面 Editor `joinSession` | 无此配置面 | ❌ |
+| 桌面 Editor `joinSession` | 已移除 | — |
 
 `/model` 若只 `rpc.model.switchTo`，系统提示词不会重建。无头因此改为 resume 当前会话，并把目标模型写进 `SessionConfig.model`。
 

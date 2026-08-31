@@ -10,3 +10,6 @@ bots/
 config/access.json
 config/bots.json
 .skills-allow/
+/runtime/*
+!/runtime/README.md
+!/runtime/VERSION

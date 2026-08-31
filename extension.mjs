@@ -2,7 +2,6 @@
 // Copilot CLI Telegram Bridge Extension
 // ============================================================
 
-import { joinSession } from "@github/copilot-sdk/extension";
 import { CopilotClient, RuntimeConnection } from "@github/copilot-sdk";
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, renameSync, readdirSync, statSync } from "node:fs";
 import { join, basename } from "node:path";
@@ -73,7 +72,7 @@ const BOTS_REGISTRY_PATH = join(CONFIG_DIR, "bots.json");
 const BOTS_DIR = join(EXT_DIR, "bots");
 
 /**
- * Telegram Bot 命令菜单（join / headless 共用）。
+ * Telegram Bot 命令菜单（无头 bot 共用）。
  * 无头 /reboot 靠 launchd KeepAlive 真重启；SecondaryBot 等受限菜单不加此项。
  * @param {{ includeReboot?: boolean }} [opts]
  */
@@ -248,7 +247,7 @@ function createBotInstance(name, token, isHeadless, botRegistryEntry = {}, enabl
     let headlessClient = null;
     /** 无头切换中的 Promise，防止连点并发切换 */
     let headlessSwitching = null;
-    /** 桌面 lock handoff 超时检测（只保留最新一次） */
+    /** 无头 /session 切换超时（只保留最新一次） */
     let desktopHandoffTimer = null;
     let abortController;
     let shutdownRequested = false;
@@ -1338,14 +1337,9 @@ async function handleTelegramCommand(args, sessionId) {
 }
 
 // Register /telegram as an SDK slash command via the wire protocol.
-// The SDK's joinSession doesn't expose the `commands` parameter, so we
-// send a follow-up session.resume with just the commands field. The server
-// merges this additively -- undefined fields are skipped.
+// session.resume merges commands additively -- undefined fields are skipped.
 async function registerSlashCommand(sess) {
     const commands = [{ name: "telegram", description: "Telegram bridge: setup, connect, disconnect, status, remove" }];
-    // Must include hooks:true to preserve hook registrations from joinSession.
-    // Without it, the server treats this as enableHooksCallback:false and removes
-    // the ad-hoc hooks that were just registered.
     await sess.connection.sendRequest("session.resume", {
         sessionId: sess.sessionId,
         commands,
@@ -1374,27 +1368,23 @@ async function registerSlashCommand(sess) {
                     let client = null;
                     let isLeader = false;
                     // daemon：独立常驻进程；app：桌面扩展内嵌无头（可被 daemon 抢占）
-                    const leaderMode = BRIDGE_MODE === "headless-only" ? "daemon" : "app";
                     const leaderOpts = {
-                        mode: leaderMode,
-                        preferSteal: leaderMode === "daemon",
+                        mode: "daemon",
+                        preferSteal: true,
                     };
 
-                    // 外层：丢 leader 后重新 standby（App 可在 daemon 退出后顶上）
                     while (!shutdownRequested) {
                     isLeader = false;
-                    // 无头单例：多桌面会话都会挂载本扩展，只允许一个进程接管 Telegram 无头 bot
-                    // 独立 daemon 优先；App 侧抢不到则 standby，daemon 挂掉后再顶上
                     while (!shutdownRequested && !tryAcquireHeadlessLeadership(name, leaderOpts)) {
                         console.error(
-                            `telegram-bridge: [${name}] another headless leader is active (mode=${leaderMode}); standby...`
+                            `telegram-bridge: [${name}] another headless leader is active; standby...`
                         );
                         await sleep(15000);
                     }
                     if (shutdownRequested) return;
                     isLeader = true;
                     console.error(
-                        `telegram-bridge: [${name}] acquired headless leadership (pid=${process.pid} mode=${leaderMode})`
+                        `telegram-bridge: [${name}] acquired headless leadership (pid=${process.pid} mode=daemon)`
                     );
 
                     while (!shutdownRequested) {
@@ -1415,24 +1405,16 @@ async function registerSlashCommand(sess) {
                             //   若只等 isLockStale 会死等；leader 已归 daemon，sticky 在 state 里。
                             const existingLock = readLock(name);
                             if (existingLock && existingLock.pid !== process.pid) {
-                                if (leaderMode === "daemon" || isLockStale(existingLock)) {
+                                console.error(
+                                    `telegram-bridge: [${name}] clearing lock held by pid=${existingLock.pid} session=${existingLock.sessionId}`
+                                );
+                                try {
+                                    rmSync(botLockPath(name), { force: true });
+                                } catch (rmLockErr) {
                                     console.error(
-                                        `telegram-bridge: [${name}] clearing lock held by pid=${existingLock.pid} session=${existingLock.sessionId} (mode=${leaderMode})`
+                                        `telegram-bridge: [${name}] clear lock failed:`,
+                                        rmLockErr.message
                                     );
-                                    try {
-                                        rmSync(botLockPath(name), { force: true });
-                                    } catch (rmLockErr) {
-                                        console.error(
-                                            `telegram-bridge: [${name}] clear lock failed:`,
-                                            rmLockErr.message
-                                        );
-                                    }
-                                } else {
-                                    console.error(
-                                        `telegram-bridge: [${name}] lock held by pid=${existingLock.pid} session=${existingLock.sessionId}; waiting...`
-                                    );
-                                    await sleep(10000);
-                                    continue;
                                 }
                             }
 
@@ -1752,85 +1734,7 @@ async function registerSlashCommand(sess) {
                     try { releaseHeadlessLeadership(name); } catch {}
                 });
             } else {
-                try {
-                    console.error(`telegram-bridge: [${name}] joining editor session...`);
-                    session = await joinSession({
-                        onPermissionRequest: createPermissionHandler(),
-                        onUserInputRequest: createUserInputHandler(),
-                        onExitPlanModeRequest: createExitPlanModeHandler(),
-                    });
-                    currentSessionId = session.sessionId;
-                    console.error(`telegram-bridge: [${name}] editor session joined: ${session.sessionId}`);
-
-                    // join + allow-all：会话级放行（与无头一致）；ask 模式此函数会 no-op
-                    await enableHeadlessAllowAll(session);
-
-                    // 桌面端：官方 auto 一律踢走；有 per-bot default 时再对齐 default。
-                    const modelsCfg = loadModelsConfig();
-                    const desktopDefault = botProfile.defaultModel || modelsCfg.defaultModel || null;
-                    try {
-                        const kicked = await banishBlockedSessionModel(session, {
-                            fallbacks: collectBotModelFallbacks({
-                                lastModelId: typeof readBotModel === "function" ? readBotModel(name) : null,
-                                defaultModel: desktopDefault,
-                            }),
-                            logPrefix: `telegram-bridge: [${name}]`,
-                        });
-                        if (kicked?.switched && kicked.desiredModel && typeof rememberBotModel === "function") {
-                            rememberBotModel(name, kicked.desiredModel);
-                        }
-                    } catch (kickErr) {
-                        console.error(`telegram-bridge: [${name}] desktop auto banish failed:`, kickErr.message);
-                    }
-                    if (desktopDefault && botProfile.defaultModel) {
-                        try {
-                            const desiredFull = String(desktopDefault).trim();
-                            const desiredLocal = desiredFull.includes("/")
-                                ? desiredFull.split("/").pop()
-                                : desiredFull;
-                            const current = await session.rpc.model.getCurrent();
-                            const currentId = current?.modelId || "";
-                            const currentLocal = String(currentId).includes("/")
-                                ? String(currentId).split("/").pop()
-                                : String(currentId);
-                            const shouldSwitch = isOfficialModelBlocked(currentId, modelsCfg)
-                                || currentLocal.toLowerCase() !== String(desiredLocal).toLowerCase();
-                            if (shouldSwitch && !isOfficialModelBlocked(desiredFull, modelsCfg)) {
-                                const res = await session.rpc.model.list();
-                                const all = res?.list || [];
-                                const target =
-                                    all.find((m) => String(m.id) === desiredFull) ||
-                                    all.find((m) => String(m.id || "").endsWith("/" + desiredLocal)) ||
-                                    all.find((m) => String(m.id) === desiredLocal);
-                                if (target?.id && !isOfficialModelBlocked(target.id, modelsCfg)) {
-                                    await session.rpc.model.switchTo({
-                                        modelId: target.id,
-                                        contextTier: "default",
-                                    });
-                                    console.error(
-                                        `telegram-bridge: [${name}] desktop model corrected → ${target.id}`
-                                    );
-                                } else {
-                                    console.error(
-                                        `telegram-bridge: [${name}] desktop model '${desktopDefault}' not found in joined session`
-                                    );
-                                }
-                            }
-                        } catch (modelErr) {
-                            console.error(`telegram-bridge: [${name}] desktop model switch failed:`, modelErr.message);
-                        }
-                    }
-
-                    await registerSlashCommand(session);
-
-                    autoConnectWithRetry(name, currentSessionId).catch(err => {
-                        console.error(`telegram-bridge: [${name}] autoConnectWithRetry error:`, err);
-                    });
-                    startLockPoller(name, currentSessionId);
-
-                } catch (err) {
-                    console.error(`telegram-bridge: [${name}] failed to join editor session:`, err);
-                }
+                console.error(`telegram-bridge: [${name}] editor/joinbot removed; skip start`);
             }
         },
         shutdown: async () => {
@@ -1870,8 +1774,8 @@ async function registerSlashCommand(sess) {
 // Section 13: Lifecycle (startup + shutdown)
 // ============================================================
 
-/** all=桌面扩展默认双 bot；headless-only=独立守护只跑无头；editor-only=仅桌面 bot（预留） */
-const BRIDGE_MODE = String(process.env.TELEGRAM_BRIDGE_MODE || "all").trim().toLowerCase();
+/** 仅无头；joinbot / TELEGRAM_BRIDGE_MODE=all|editor-only 已移除 */
+const BRIDGE_MODE = String(process.env.TELEGRAM_BRIDGE_MODE || "headless-only").trim().toLowerCase();
 
 async function main() {
     loadShellEnvForByok();
@@ -1901,14 +1805,13 @@ async function main() {
             continue;
         }
         const profile = resolveBotProfile(name, bot, i);
-        const isHeadless = profile.isHeadless;
-        if (BRIDGE_MODE === "headless-only" && !isHeadless) {
-            console.error(`telegram-bridge: skip editor bot '${name}' (headless-only daemon)`);
+        if (profile.role === "editor" || !profile.isHeadless) {
+            console.error(`telegram-bridge: skip '${name}' (joinbot/editor removed)`);
             continue;
         }
-        if ((BRIDGE_MODE === "editor-only" || BRIDGE_MODE === "app-editor") && isHeadless) {
-            console.error(`telegram-bridge: skip headless bot '${name}' (editor-only)`);
-            continue;
+        const isHeadless = true;
+        if (BRIDGE_MODE && BRIDGE_MODE !== "headless-only" && BRIDGE_MODE !== "all") {
+            console.error(`telegram-bridge: TELEGRAM_BRIDGE_MODE=${BRIDGE_MODE} ignored (headless-only)`);
         }
         console.error(
             `telegram-bridge: boot bot='${name}' role=${profile.role} profile=${profile.profile || "-"} ` +

@@ -215,7 +215,7 @@
         "kimi-k3-high",
         "kimi-k3-max",
         "claude-sonnet-4-6",
-        "gemini-3.7-flash-high"
+        "gemini-flash"
       ]
     },
     "prompt-reverse": {

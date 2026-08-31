@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # telegram-bridge 无头独立守护
-# 脱离 GitHub Copilot.app 会话生命周期，避免「桌面未进 session 时约两条后无响应」。
-# 不依赖桌面 App 是否打开；CLI 二进制 + bootstrap 即可长驻。
+# 只用 Bridge 自管 runtime/（CLI + SDK + bootstrap），不扫 Copilot.app 缓存。
+# 首次或换版本：bash scripts/vendor-copilot-runtime.sh
 #
 # 用法:
 #   bash scripts/headless-daemon.sh start|stop|restart|status|run
@@ -13,8 +13,7 @@ EXT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PID_FILE="${EXT_DIR}/bots/Headless/daemon.pid"
 LOG_FILE="${EXT_DIR}/bots/Headless/daemon.log"
 STATE_DIR="${HOME}/.copilot/session-state"
-CACHE_PKG="${HOME}/Library/Caches/copilot/pkg/darwin-arm64"
-CLI_ROOT="${HOME}/Library/Caches/github-copilot-sdk/cli"
+RUNTIME_ROOT="${EXT_DIR}/runtime"
 PLIST_SRC="$(cd "$(dirname "$0")" && pwd)/com.copilot-telegram-bridge.plist"
 LAUNCH_LABEL="com.copilot-telegram-bridge"
 LAUNCH_PLIST="${HOME}/Library/LaunchAgents/${LAUNCH_LABEL}.plist"
@@ -22,46 +21,29 @@ UID_NUM="$(id -u)"
 LAUNCH_DOMAIN="gui/${UID_NUM}"
 LAUNCH_SERVICE="${LAUNCH_DOMAIN}/${LAUNCH_LABEL}"
 
-resolve_latest_dir() {
-  local root="$1"
-  ls -1dt "${root}"/*/ 2>/dev/null | head -1 | sed 's:/*$::'
-}
-
-pkg_complete() {
-  local dir="$1"
-  [[ -n "${dir}" && -d "${dir}/copilot-sdk" && -f "${dir}/preloads/extension_bootstrap.mjs" ]]
-}
-
-# 解析运行时：优先「同版本号」CLI↔pkg 成对；避免 mtime 错配（如 CLI 1.0.79-5 + pkg 1.0.78-2）
-# 每次调用重新扫盘，供启动 / sdk-watch / status 共用。
+# 只用 runtime/<VERSION>/；不再读 App Caches。
 resolve_runtime() {
   COPILOT_BIN=""
   PKG_DIR=""
   RUNTIME_ALIGN="none"
 
-  local bin ver candidate
-  # ls -1t：按 CLI 二进制 mtime，通常即桌面刚解包的最新版
-  while IFS= read -r bin; do
-    [[ -n "${bin}" && -x "${bin}" ]] || continue
-    ver="$(basename "$(dirname "${bin}")")"
-    candidate="${CACHE_PKG}/${ver}"
-    if pkg_complete "${candidate}"; then
-      COPILOT_BIN="${bin}"
-      PKG_DIR="${candidate}"
-      RUNTIME_ALIGN="version:${ver}"
-      break
-    fi
-  done < <(ls -1t "${CLI_ROOT}"/*/copilot 2>/dev/null || true)
-
-  # 无成对版本时退回各自最新（可能错配，仅兜底）
-  if [[ -z "${COPILOT_BIN}" || -z "${PKG_DIR}" ]]; then
-    COPILOT_BIN="$(ls -1t "${CLI_ROOT}"/*/copilot 2>/dev/null | head -1 || true)"
-    PKG_DIR="$(resolve_latest_dir "${CACHE_PKG}")"
-    RUNTIME_ALIGN="mtime-fallback"
+  local ver
+  ver="$(tr -d '[:space:]' < "${RUNTIME_ROOT}/VERSION" 2>/dev/null || true)"
+  if [[ -z "${ver}" ]]; then
+    echo "error: ${RUNTIME_ROOT}/VERSION missing. Run: bash ${EXT_DIR}/scripts/vendor-copilot-runtime.sh" >&2
+    COPILOT_BIN=""
+    PKG_DIR=""
+    SDK_PATH=""
+    BOOTSTRAP=""
+    RUNTIME_FP=""
+    return 0
   fi
 
-  SDK_PATH="${PKG_DIR:+${PKG_DIR}/copilot-sdk}"
-  BOOTSTRAP="${PKG_DIR:+${PKG_DIR}/preloads/extension_bootstrap.mjs}"
+  PKG_DIR="${RUNTIME_ROOT}/${ver}/pkg"
+  COPILOT_BIN="${RUNTIME_ROOT}/${ver}/cli/copilot"
+  SDK_PATH="${PKG_DIR}/copilot-sdk"
+  BOOTSTRAP="${PKG_DIR}/preloads/extension_bootstrap.mjs"
+  RUNTIME_ALIGN="vendored:${ver}"
   RUNTIME_FP="${COPILOT_BIN}|${SDK_PATH}"
 }
 
@@ -70,12 +52,7 @@ resolve_runtime() {
 # 幂等软化：有合法 parent 仍守护；未设置则继续跑。同时处理「CLI 偏好的 latest localBootstrap」。
 ensure_bootstrap_compat() {
   local targets=()
-  local latest
   [[ -n "${BOOTSTRAP:-}" && -f "${BOOTSTRAP}" ]] && targets+=("${BOOTSTRAP}")
-  latest="$(resolve_latest_dir "${CACHE_PKG}")"
-  if [[ -n "${latest}" && -f "${latest}/preloads/extension_bootstrap.mjs" ]]; then
-    targets+=("${latest}/preloads/extension_bootstrap.mjs")
-  fi
 
   # 去重（aligned 与 latest 可能相同）
   local path seen=""
@@ -153,7 +130,7 @@ PY
 
 require_runtime() {
   if [[ -z "${COPILOT_BIN}" || ! -x "${COPILOT_BIN}" ]]; then
-    echo "error: copilot CLI not found under ${CLI_ROOT}" >&2
+    echo "error: vendored copilot CLI missing (${COPILOT_BIN:-none}). Run: bash ${EXT_DIR}/scripts/vendor-copilot-runtime.sh" >&2
     exit 1
   fi
   if [[ -z "${BOOTSTRAP}" || ! -f "${BOOTSTRAP}" ]]; then
@@ -164,15 +141,10 @@ require_runtime() {
     echo "error: copilot-sdk not found at ${SDK_PATH:-none}" >&2
     exit 1
   fi
-  if [[ "${RUNTIME_ALIGN:-}" == "mtime-fallback" ]]; then
-    echo "headless-daemon: warn: CLI/pkg version pair missing; using mtime fallback (may mismatch)" >&2
-  fi
 }
 
 EXTENSION_PATH="${EXT_DIR}/extension.mjs"
 RUNTIME_FP_FILE="${EXT_DIR}/bots/Headless/active-runtime.fp"
-# 巡检间隔秒；TELEGRAM_SDK_WATCH=0 关闭自动重启
-SDK_WATCH_INTERVAL_SEC="${TELEGRAM_SDK_WATCH_INTERVAL_SEC:-300}"
 
 resolve_runtime
 require_runtime
@@ -295,63 +267,6 @@ cmd_stop() {
   echo "headless-daemon: stopped"
 }
 
-# 后台巡检：Cache 出现更新的 CLI/SDK 时自动重启无头进程
-start_sdk_watcher() {
-  local daemon_pid="$1"
-  local started_fp="$2"
-  # 0 / false / off 关闭
-  case "${TELEGRAM_SDK_WATCH:-1}" in
-    0|false|FALSE|off|OFF|no|NO) return 0 ;;
-  esac
-  local interval="${SDK_WATCH_INTERVAL_SEC}"
-  if ! [[ "${interval}" =~ ^[0-9]+$ ]] || [[ "${interval}" -lt 60 ]]; then
-    interval=300
-  fi
-
-  (
-    # 注意：子 shell 不能用 local；失败不得因 set -e 静默退出
-    set +e
-    echo "telegram-bridge: [sdk-watch] started pid=${BASHPID:-$$} watch=${daemon_pid} interval=${interval}s fp=${started_fp}" >>"${LOG_FILE}"
-    while kill -0 "${daemon_pid}" 2>/dev/null; do
-      sleep "${interval}"
-      kill -0 "${daemon_pid}" 2>/dev/null || exit 0
-
-      # 与 run 相同：版本成对解析（函数在 fork 前已定义，子 shell 可调用）
-      resolve_runtime
-      new_fp="${RUNTIME_FP}"
-      new_bin="${COPILOT_BIN}"
-      new_sdk="${SDK_PATH}"
-
-      if [[ -z "${new_bin}" || -z "${new_sdk}" || ! -x "${new_bin}" || ! -d "${new_sdk}" ]]; then
-        continue
-      fi
-      if [[ "${new_fp}" == "${started_fp}" ]]; then
-        continue
-      fi
-
-      {
-        echo "telegram-bridge: [sdk-watch] runtime update detected"
-        echo "  was: ${started_fp}"
-        echo "  now: ${new_fp}"
-        echo "  align: ${RUNTIME_ALIGN}"
-        echo "  action: restart headless daemon (compat re-applied on next run)"
-      } >>"${LOG_FILE}" 2>&1
-
-      # launchd KeepAlive：kickstart 重拉；下次 run 会重新 resolve + ensure_bootstrap_compat
-      if launchctl print "${LAUNCH_SERVICE}" >/dev/null 2>&1; then
-        launchctl kickstart -k "${LAUNCH_SERVICE}" >>"${LOG_FILE}" 2>&1 || true
-      else
-        kill -TERM "${daemon_pid}" 2>/dev/null || true
-        sleep 1
-        nohup bash "${EXT_DIR}/scripts/headless-daemon.sh" start >>"${LOG_FILE}" 2>&1 &
-      fi
-      exit 0
-    done
-  ) &
-  # 不 disown 到“无父”：exec 后子进程仍挂在同 PID；记录 watcher pid 便于排查
-  echo "$!" >"${EXT_DIR}/bots/Headless/sdk-watch.pid" 2>/dev/null || true
-}
-
 run_daemon() {
   # 每次 run 重新解析，避免脚本顶层缓存过期
   resolve_runtime
@@ -378,10 +293,6 @@ run_daemon() {
   echo "headless-daemon: run pid=$$ bin=${COPILOT_BIN}" >>"${LOG_FILE}"
   echo "headless-daemon: sdk=${SDK_PATH}" >>"${LOG_FILE}"
   echo "headless-daemon: align=${RUNTIME_ALIGN}" >>"${LOG_FILE}"
-  echo "headless-daemon: sdk-watch interval=${SDK_WATCH_INTERVAL_SEC}s (TELEGRAM_SDK_WATCH=${TELEGRAM_SDK_WATCH:-1})" >>"${LOG_FILE}"
-
-  start_sdk_watcher "$$" "${RUNTIME_FP}"
-
   cd "${EXT_DIR}"
   exec "${COPILOT_BIN}" "${BOOTSTRAP}"
 }
@@ -517,7 +428,7 @@ cmd_uninstall() {
 
 usage() {
   echo "Usage: $0 {start|stop|restart|status|run|install|uninstall}"
-  echo "  env: TELEGRAM_SDK_WATCH=0 disable auto-restart; TELEGRAM_SDK_WATCH_INTERVAL_SEC=300 (default 300)"
+  echo "  runtime: bash ${EXT_DIR}/scripts/vendor-copilot-runtime.sh"
   exit 2
 }
 

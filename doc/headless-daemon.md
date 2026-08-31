@@ -3,7 +3,7 @@
 > 扩展：`~/.copilot/extensions/copilot-telegram-bridge`  
 > 对照：[`editor-bot.md`](./editor-bot.md) · 模型：[`models-config.md`](./models-config.md) · 人设：[`system-prompts.md`](./system-prompts.md)
 
-无头主路径是 **LaunchAgent 常驻守护**，不依赖 GitHub Copilot 桌面是否打开。桌面扩展在「没进具体 session」时可能节流；守护脱离该生命周期。
+无头主路径是 **LaunchAgent 常驻守护**，**不依赖 GitHub Copilot 桌面 App**。CLI / SDK / bootstrap 钉在扩展目录 `runtime/`（见 [`../runtime/README.md`](../runtime/README.md)）。
 
 ```text
 launchd gui/$(id -u)  com.copilot-telegram-bridge
@@ -12,14 +12,15 @@ launchd gui/$(id -u)  com.copilot-telegram-bridge
 headless-daemon.sh run
   TELEGRAM_BRIDGE_MODE=headless-only
        ▼
-copilot <extension_bootstrap.mjs> → extension.mjs
-  只起 role=headless 的 bot（可多个：Headless + SecondaryBot）
-  每 bot：leader / sticky / poll / create|resume + BYOK
+runtime/<VERSION>/cli/copilot  +  runtime/<VERSION>/pkg/preloads/extension_bootstrap.mjs
+       ▼
+extension.mjs
+  只起 role=headless 的 bot
 ```
 
-**硬依赖**：CLI 缓存二进制 + bootstrap/SDK（§4）· CLI Proxy `:8317`（指针见 `models.json` / `CLIPROXY_BASE_URL`）· `config/bots.json` token · `config/access.json`。
+**硬依赖**：`runtime/` 成对 CLI+SDK · CLI Proxy `:8317` · `config/bots.json` token · `config/access.json`。
 
-App 内嵌扩展可并行；守护已占 leader 时，App 侧 Headless 应 standby。
+换版本：`bash scripts/vendor-copilot-runtime.sh`（从本机 Caches 再拷一份；App 已卸则手工放入 `runtime/<ver>/`）。
 
 ---
 
@@ -33,7 +34,7 @@ App 内嵌扩展可并行；守护已占 leader 时，App 侧 Headless 应 stand
 | `COPILOT_CLI_PATH` | 缓存里的 `copilot` | CLI |
 | `SESSION_ID` | `headless-daemon` | **宿主**会话名，不是业务 sticky UUID |
 
-`all`（桌面默认）= editor + headless 都尝试；`editor-only` 仅 editor。`bots.json` 的 `role` 优先。
+`bots.json` 的 `role` 只认 `headless`。`editor` 启动时跳过。
 
 `headless-daemon.sh run`：对齐 CLI/pkg 版本 → 写 `bots/Headless/daemon.pid` → `exec copilot extension_bootstrap.mjs`（stdout/err → `daemon.log`）。
 
@@ -66,20 +67,19 @@ App 内嵌扩展可并行；守护已占 leader 时，App 侧 Headless 应 stand
 
 ---
 
-## 3. CLI 缓存
+## 3. 钉死的 runtime
 
-守护 **不读 PATH** 里的 `copilot`，按版本号成对扫缓存：
+守护 **不读** PATH、也 **不扫** Copilot.app 缓存。
 
 | 角色 | 路径 |
 | :--- | :--- |
-| CLI | `~/Library/Caches/github-copilot-sdk/cli/<ver>/copilot` |
-| pkg / bootstrap / SDK | `~/Library/Caches/copilot/pkg/darwin-arm64/<ver>/` |
+| 版本针 | `runtime/VERSION` |
+| CLI | `runtime/<ver>/cli/copilot` |
+| pkg / bootstrap / SDK | `runtime/<ver>/pkg/` |
 
-`status` 的 `align=version:<ver>` 为成对命中；`mtime-fallback` 可能 CLI/SDK 错配。npm/brew 单独装的 CLI **不能**替代这套布局。
+`status` 的 `align=vendored:<ver>` 为命中。npm/brew 单独装的 CLI **不能**替代这套布局。
 
-Copilot `≥1.0.79` 的 bootstrap 在未设 `COPILOT_EXTENSION_PARENT_PID` 时会 `exit(0)`。`run` 对 bootstrap **幂等软化**（改前 `.bak-compat-*`）；桌面更新覆盖后下次 `run` 会重打。
-
-缓存被清：打开一次 Copilot App 解包 → `headless-daemon.sh restart`。无头不依赖桌面**窗口**，但依赖它曾经写入的缓存文件。
+bootstrap 的 parent-pid 软化打在 **vendored 副本** 上，不再改 Caches。
 
 ---
 

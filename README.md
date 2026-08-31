@@ -1,11 +1,12 @@
 # Telegram Bridge（Copilot CLI 扩展）
 
-将 **GitHub Copilot CLI / App 会话** 与 **Telegram Bot** 双向桥接：手机发消息 → 本机 agent 执行 → 回复、工具气泡、权限确认与 `ask_user` 回落到 Telegram。
+将 **GitHub Copilot CLI（无头会话）** 与 **Telegram Bot** 双向桥接：手机发消息 → 本机 agent 执行 → 回复、工具气泡、权限确认与 `ask_user` 回落到 Telegram。
 
 > 本机路径：`~/.copilot/extensions/copilot-telegram-bridge`（**先改这里**）  
 > 本机远端：`AmazingDraw/copilot-telegram-bridge`  
 > 开源镜像：`AmazingDraw/copilot-telegram-bridge`（改完跑 `bash scripts/sync-to-open-source.sh`）  
-> 开源故意不带提示词反推 Bot。
+> 开源故意不带提示词反推 Bot。  
+> **不再挂 Copilot.app / joinSession。** CLI+SDK 钉在 `runtime/`。
 
 ---
 
@@ -19,16 +20,15 @@
 
 | Registry key | 角色 | 说明 |
 | :--- | :--- | :--- |
-| `Copilot` | **桌面 / 编辑器** | `joinSession`，挂在当前 App 会话；模型列表 = 桌面会话自带，**不读** `config/models.json` |
 | `Headless` | **无头主 bot** | `createSession` / `resumeSession`；BYOK + 用户 MCP；allow-all |
 | `SecondaryBot` | **专用无头** | 专用单模型策略；open-group / deny-all |
 
 - 注册表：`config/bots.json`（token 明文、**不进 Git**）
 - 每 bot 独立目录：`bots/<Name>/`（lock / state / leader）
-- 开关：`bots.json` 各 bot 的 `disabled`（`true` 则跳过；热重载需重启 App 会话 / Headless 守护）
-- 角色：`role`（`editor` = joinSession，`headless` = create/resume）优先；缺省时名称 `Copilot`/`Editor` → editor，`Headless` 或带 `profile` → headless，其余仍按启用序第 1 个 = editor
-- 专文：[`editor-bot.md`](doc/editor-bot.md) · [`headless-daemon.md`](doc/headless-daemon.md) · [`models-config.md`](doc/models-config.md)
-- 系统提示词定制与裁剪：[`system-prompts.md`](doc/system-prompts.md)（replace 模式 / customize 模式 / skills 开关）
+- 开关：`bots.json` 各 bot 的 `disabled`（`true` 则跳过；热重载需重启 Headless 守护）
+- 角色：只支持 `headless`。`role: editor` / 旧 joinbot 启动时跳过。
+- 专文：[`headless-daemon.md`](doc/headless-daemon.md) · [`models-config.md`](doc/models-config.md) · joinbot 已移除见 [`editor-bot.md`](doc/editor-bot.md)
+- 系统提示词定制与裁剪：[`system-prompts.md`](doc/system-prompts.md)
 
 ### 模块拆分
 
@@ -62,7 +62,7 @@ createBotInstance(name, token, isHeadless)
   → attachHandlers(ctx)    # setupEventHandlers / permission / user_input
   → attachCommands(ctx)    # slash + callback
   → 晚绑定 slash connect / handleConnect
-  → start: join（桌面）或 headless leader 循环（无头）
+  → start: headless leader 循环
 ```
 
 ### 关键路径
@@ -103,14 +103,9 @@ createBotInstance(name, token, isHeadless)
 
 **可 resume 判定**（`session-fs.isSessionResumable`）：有 `session.db` 或非空 `events.jsonl`。仅 `workspace.yaml` 的 sdk 空壳不进 `/session` 列表。
 
-### 桌面 Editor Bot（Copilot）
+### 桌面 Editor Bot（已移除）
 
-> 完整说明（`joinSession` / lock handoff / 排障）：[`editor-bot.md`](doc/editor-bot.md)
-
-- 挂在 **GitHub Copilot App 当前会话**，`joinSession`，不单独 create
-- `/session` 切换 = **lock handoff**（目标须先在 App 中打开）
-- 模型列表 = 桌面会话自带；**不**走无头 `config/models.json` 装配
-- `TELEGRAM_BRIDGE_MODE=headless-only` 时 daemon **跳过** editor
+`joinSession` / lock handoff 已删除。说明见 [`editor-bot.md`](doc/editor-bot.md)。
 
 ### Headless BYOK（CLI Proxy 默认上游）
 
@@ -141,9 +136,9 @@ createBotInstance(name, token, isHeadless)
 
 ### 无头独立守护（推荐 · 开机自启）
 
-**不依赖 GitHub Copilot 桌面版是否打开。** 进程只靠本地 CLI + bootstrap；第三方模型直接走 CLI Proxy 8317。
+**不依赖 GitHub Copilot 桌面 App。** 进程只靠 `runtime/` 里钉死的 CLI + bootstrap；第三方模型走 CLI Proxy 8317。
 
-桌面 App **未进入具体 session** 时，挂在 App 树下的 Headless 可能被宿主节流（约两条后停）。独立守护脱离会话生命周期，并由 **LaunchAgent KeepAlive** 保活。
+换 CLI 版本：`bash scripts/vendor-copilot-runtime.sh`（需当时仍能读到 App 缓存，或手动把成对文件放进 `runtime/<ver>/`）。
 
 ```bash
 # 一次性安装（登录即启 + 崩溃自动拉起）
@@ -289,7 +284,7 @@ node --check extension.mjs
 node --check lib/*.mjs
 ```
 
-热更：宿主支持时 `extensions_reload`，或重启承载会话 / App。无头：`bash scripts/headless-daemon.sh restart`。
+热更：`bash scripts/headless-daemon.sh restart`。换 CLI/SDK：`bash scripts/vendor-copilot-runtime.sh` 后再 restart。
 
 **同步方向**：本机扩展 → `sync-copilot-extensions.sh`（私有仓）→ `scripts/sync-to-open-source.sh`（开源镜像）。不要直接改开源目录。
 
