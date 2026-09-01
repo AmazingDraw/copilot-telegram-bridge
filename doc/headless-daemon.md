@@ -20,7 +20,7 @@ extension.mjs
 
 **硬依赖**：`runtime/` 成对 CLI+SDK · CLI Proxy `:8317` · `config/bots.json` token · `config/access.json`。
 
-换版本：见 [`../runtime/README.md`](../runtime/README.md)。本机最稳是临时装回 Copilot.app 解包后跑 `vendor-copilot-runtime.sh`，再 `headless-daemon.sh restart`。npm/brew CLI 不够。
+换版本：`bash scripts/vendor-copilot-runtime.sh`（默认 npm 平台包，可跟版本号）再 `headless-daemon.sh restart`。见 [`../runtime/README.md`](../runtime/README.md)。PATH 上的 npm/brew `copilot` 不够。
 
 ---
 
@@ -76,7 +76,7 @@ extension.mjs
 | CLI | `runtime/<ver>/cli/copilot` |
 | pkg / bootstrap / SDK | `runtime/<ver>/pkg/` |
 
-`status` 的 `align=vendored:<ver>` 为命中。npm/brew 单独装的 CLI **不能**替代这套布局（缺 bootstrap 与整包 `pkg/`）。升级步骤见 [`../runtime/README.md`](../runtime/README.md)。
+`status` 的 `align=vendored:<ver>` 为命中。PATH 上的 npm/brew `copilot` **不能**替代这套布局。升级用 `vendor-copilot-runtime.sh` 拉 `@github/copilot-<plat>`，见 [`../runtime/README.md`](../runtime/README.md)。
 
 bootstrap 的 parent-pid 软化打在 **vendored 副本** 上，不再改 Caches。
 
@@ -163,9 +163,9 @@ runtime/<ver>/pkg/{preloads,copilot-sdk}
 ~/.cli-proxy-api/          # :8317，独立 LaunchAgent
 ```
 
-换版本若本机还有 Caches，可作 `vendor-copilot-runtime.sh` 的拷贝源（不是运行时路径）：
+离线才用 Caches：`bash scripts/vendor-copilot-runtime.sh --from-cache`（不是运行时路径）：
 
 ```text
 ~/Library/Caches/github-copilot-sdk/cli/<ver>/copilot
-~/Library/Caches/copilot/pkg/darwin-arm64/<ver>/{preloads,copilot-sdk}
+~/Library/Caches/copilot/pkg/<plat>/<ver>/{preloads,copilot-sdk}
 ```

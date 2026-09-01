@@ -19,38 +19,29 @@ runtime/<ver>/cli/copilot  runtime/<ver>/pkg/preloads/extension_bootstrap.mjs
 # COPILOT_SDK_PATH=runtime/<ver>/pkg/copilot-sdk
 ```
 
-二进制不进 Git；只跟踪 `VERSION` 与本说明。卸掉桌面 App 后 **不要删** `runtime/<VERSION>/`。
+二进制不进 Git；只跟踪 `VERSION` 与本说明。
 
 ## 换版本
 
-日常值班不需要 Copilot.app。要升到新 CLI/SDK，本机最稳的做法是 **临时装回桌面 App**，让它把成对文件解到 Caches，再拷进来：
+从 npm **平台包**拉成对 CLI+pkg（含 `extension_bootstrap.mjs`），不需要 Copilot.app：
 
 ```bash
-# 1. 安装并打开一次 GitHub Copilot.app，等它解包完成
-# 2. 拷成对 CLI + pkg，并给 vendored bootstrap 打 parent-pid 补丁
+# 当前平台 latest（macOS arm64 → @github/copilot-darwin-arm64）
 bash scripts/vendor-copilot-runtime.sh
-# 3. 重启守护
+
+# 钉死版本
+bash scripts/vendor-copilot-runtime.sh 1.0.80
+
+# 重启守护
 bash scripts/headless-daemon.sh restart
-# 4. 确认 status 里 align=vendored:<新版本>
-# 5. 桌面 App 可以再卸掉
+# 确认 status 里 align=vendored:<新版本>
 ```
 
-脚本源是：
+镜像可用 `NPM_REGISTRY`（默认 `https://registry.npmjs.org`）。包大约 300MB+。
 
-```text
-~/Library/Caches/github-copilot-sdk/cli/<ver>/copilot
-~/Library/Caches/copilot/pkg/darwin-arm64/<ver>/
-```
+`npm i -g @github/copilot` / brew 装到 PATH 的仍不够：守护不读 PATH，要的是 `runtime/<ver>/cli` + 整包 `pkg/`。vendor 脚本拉的是 `@github/copilot-<plat>`，不是那个薄包装。
 
-两处版本号必须一致，且 pkg 里要有 `copilot-sdk/` 和 `preloads/extension_bootstrap.mjs`。
+离线备选：
 
-没有桌面 App 时，也可以从另一台已解包的 Mac **手工** 把同一套 `cli/` + `pkg/` 放进 `runtime/<ver>/`，再把 `VERSION` 写成该 `<ver>`。
-
-## 为什么 npm / brew CLI 不够
-
-`npm` / `brew` 装的是终端聊天 CLI，一般 **没有** 扩展宿主：
-
-- `extension_bootstrap.mjs`（用来加载 `~/.copilot/extensions/` 里的 Bridge）
-- 与该 CLI **同版本** 的整包 `pkg/`（SDK、napi、wasm、builtin…）
-
-PATH 上有 `copilot` 也接不上：守护不读 PATH。单装 `@github/copilot-sdk` 也替代不了 `pkg/copilot-sdk`。
+- `bash scripts/vendor-copilot-runtime.sh --from-cache`：若本机还有 App 解过的 Caches
+- 或从另一台已 vendor 的机器拷 `runtime/<ver>/`，把 `VERSION` 写成该 `<ver>`

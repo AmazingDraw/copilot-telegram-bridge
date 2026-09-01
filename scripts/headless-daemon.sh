@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # telegram-bridge 无头独立守护
 # 只用 Bridge 自管 runtime/（CLI + SDK + bootstrap），不扫 Copilot.app 缓存。
-# 首次或换版本：bash scripts/vendor-copilot-runtime.sh
+# 首次或换版本：bash scripts/vendor-copilot-runtime.sh   # npm 平台包，可跟版本号
 #
 # 用法:
 #   bash scripts/headless-daemon.sh start|stop|restart|status|run
