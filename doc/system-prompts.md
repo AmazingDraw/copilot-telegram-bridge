@@ -19,12 +19,12 @@
 │    • 用户 MCP 工具定义                                  │
 ├────────────────────────────────────────────────────────┤
 │ 3. 用户/业务指令 (1k~4k tokens)                         │
-│    • AGENTS.md / PROMPT_REVERSE.md / 自定义人设         │
+│    • AGENTS.md / 自定义人设                             │
 └────────────────────────────────────────────────────────┘
 ```
 
 * **Headless 主 Bot**：保留第 1 层里的**改码与工具骨架**，裁掉 CLI 身份/语气；第 3 层人设挂在全部 section **之后**。
-* **垂直专用 Bot（SecondaryBot）**：`replace` 只留第 3 层。
+* **可选专用 Bot**：`systemMessageMode: "replace"` 时只留第 3 层。
 
 ---
 
@@ -34,7 +34,7 @@
 | :--- | :--- | :--- |
 | **`"append"`** | 完整 SDK 底模 + 末尾追加 | 显式 `systemMessageMode: "append"` 时 |
 | **`"customize"`** | 按 section 增删改，可选末尾 `content` | **Headless 默认** |
-| **`"replace"`** | 清空 SDK 底模，全部由调用方提供 | `profile=prompt-reverse` 默认 |
+| **`"replace"`** | 清空 SDK 底模，全部由调用方提供 | 专用 Bot 可设 |
 
 ---
 
@@ -59,7 +59,7 @@
 
 人设放在 customize 的顶层 **`content`**（全部保留 section 之后）。不写 `organizationCustomInstructions`。
 
-垂直 Bot 继续 `replace`，不要用这套裁剪。
+专用 Bot 继续 `replace`，不要用这套裁剪。
 
 ---
 
@@ -83,10 +83,9 @@
 
 ```json
 {
-  "SecondaryBot": {
+  "Specialized": {
     "role": "headless",
-    "profile": "prompt-reverse",
-    "agentsMd": "memory/PROMPT_REVERSE.md",
+    "agentsMd": "memory/AGENTS.md",
     "permissionMode": "deny-all",
     "loadMcp": false,
     "loadSkills": false,
@@ -96,10 +95,8 @@
 ```
 
 * **`agentsMd`**：该 Bot 提示词文件（相对 bridge 根或绝对路径）。
-* **`systemMessageMode`**：`"replace"` \| `"customize"` \| `"append"`。
-  * `profile === "prompt-reverse"` → 默认 `"replace"`。
-  * 其他 → 默认 `"customize"`。
-* **`loadSkills` / `loadMcp`**：prompt-reverse 与 deny-all 默认 false。
+* **`systemMessageMode`**：`"replace"` \| `"customize"` \| `"append"`。未写时 Headless 默认 `"customize"`。
+* **`loadSkills` / `loadMcp`**：`deny-all` 默认 false。
 
 实现：`lib/bot-profile.mjs`、`lib/byok-providers.mjs` 的 `buildHeadlessSystemMessage` / `HEADLESS_CUSTOMIZE_SECTIONS`。
 
@@ -113,7 +110,7 @@
 * `loadSkills` / `loadMcp`: `true`
 * `agentsMd`: `memory/AGENTS.md`
 
-### SecondaryBot（看图反推）
+### 专用 Bot（可选）
 
 * `systemMessageMode`: `"replace"`
 * `loadSkills` / `loadMcp`: `false`
@@ -126,7 +123,4 @@
 ```text
 telegram-bridge: systemMessage mode=customize sections=preamble:remove,tone:remove,guidelines:remove,custom_instructions:remove,last_instructions:remove,safety:replace agents=3240c
 telegram-bridge: [Headless] headless model rehydrate → cliproxy/xxx session=<uuid> agents=3240c
-
-telegram-bridge: systemMessage mode=replace (len=2283c)
-telegram-bridge: [SecondaryBot] skills_loaded count=0
 ```

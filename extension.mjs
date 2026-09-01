@@ -72,7 +72,7 @@ const BOTS_DIR = join(EXT_DIR, "bots");
 
 /**
  * Telegram Bot 命令菜单（无头 bot 共用）。
- * 无头 /reboot 靠 launchd KeepAlive 真重启；SecondaryBot 等受限菜单不加此项。
+ * 无头 /reboot 靠 launchd KeepAlive 真重启；受限菜单 bot 不加此项。
  * @param {{ includeReboot?: boolean }} [opts]
  */
 function buildTelegramBotMenu(opts = {}) {

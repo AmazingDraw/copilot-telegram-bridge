@@ -89,7 +89,7 @@ bootstrap 的 parent-pid 软化打在 **vendored 副本** 上，不再改 Caches
 * 会话：SDK `createSession` / `resumeSession`。
 * 模型：`config/models.json`（`catalog` + `modelSets.headless` + cliproxy）。改完 `check-model-config.mjs --live` 再 `restart`。见 [`models-config.md`](./models-config.md)。
 * 人设 / MCP / Skills：create、resume、`/session`、`/new`、`/model` 重注入。见 [`system-prompts.md`](./system-prompts.md)。`enableConfigDiscovery` **不开**。
-* 权限：默认 allow-all（`setAllowAll` + `approve-once`）。`deny-all`（如 SecondaryBot）拒绝工具且默认不加载 MCP。
+* 权限：默认 allow-all（`setAllowAll` + `approve-once`）。`deny-all` 拒绝工具且默认不加载 MCP。
 * 锁：`bots/<Name>/lock.json`；他会话持锁则 auto-connect 停手。
 
 ---
@@ -156,7 +156,7 @@ tail -50 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log
   bots/Headless/{daemon.pid,daemon.log,headless.leader.json,lock.json,state.json}
 
 ~/.copilot/mcp-config.json
-memory/{AGENTS,PROMPT_REVERSE}.md
+memory/AGENTS.md
 ~/Library/LaunchAgents/com.copilot-telegram-bridge.plist
 runtime/<ver>/cli/copilot
 runtime/<ver>/pkg/{preloads,copilot-sdk}

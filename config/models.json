@@ -198,13 +198,6 @@
         "deepseek-v4-flash",
         "deepseek-v4-pro"
       ]
-    },
-    "prompt-reverse": {
-      "$comment": "SecondaryBot 专用单模型策略。",
-      "defaultModel": "cursor-auto",
-      "models": [
-        "cursor-auto"
-      ]
     }
   },
   "skillSets": {
