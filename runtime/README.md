@@ -37,7 +37,11 @@ bash scripts/headless-daemon.sh restart
 # 确认 status 里 align=vendored:<新版本>
 ```
 
-镜像可用 `NPM_REGISTRY`（默认 `https://registry.npmjs.org`）。包大约 300MB+。拷完会删掉 `pkg/builtin`、`pkg/builtin-skills` 以及 `.DS_Store` / `._*` / `.extraction-complete`。
+镜像可用 `NPM_REGISTRY`（默认 `https://registry.npmjs.org`）。包大约 300MB+。拷完会删掉：
+
+- `pkg/builtin`、`pkg/builtin-skills`
+- `pkg/assets`、`pkg/changelog.json`
+- `.DS_Store` / `._*` / `.extraction-complete` / `inuse.*.lock` / `preloads/*.bak-compat-*`
 
 `npm i -g @github/copilot` / brew 装到 PATH 的仍不够：守护不读 PATH，要的是 `runtime/<ver>/cli` + 整包 `pkg/`。vendor 脚本拉的是 `@github/copilot-<plat>`，不是那个薄包装。
 

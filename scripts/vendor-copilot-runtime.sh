@@ -26,9 +26,11 @@ pkg_complete() {
 # Copilot 自带 skill / 解包垃圾：无头不用，升版本也剥掉。
 prune_vendored_pkg() {
   local pkg="$1"
-  rm -rf "${pkg}/builtin" "${pkg}/builtin-skills"
-  find "${pkg}" \( -name '.DS_Store' -o -name '._*' -o -name '.extraction-complete' \) -delete 2>/dev/null || true
-  echo "vendor-copilot-runtime: stripped builtin/ builtin-skills/ + junk markers"
+  rm -rf "${pkg}/builtin" "${pkg}/builtin-skills" "${pkg}/assets"
+  rm -f "${pkg}/changelog.json"
+  find "${pkg}" \( -name '.DS_Store' -o -name '._*' -o -name '.extraction-complete' -o -name 'inuse.*.lock' \) -delete 2>/dev/null || true
+  find "${pkg}/preloads" -name '*.bak-compat-*' -delete 2>/dev/null || true
+  echo "vendor-copilot-runtime: stripped builtin/ builtin-skills/ assets/ changelog + junk markers"
 }
 
 detect_npm_plat() {
