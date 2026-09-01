@@ -153,6 +153,8 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 | 日志 / pid | `bots/Headless/daemon.log` · `daemon.pid` |
 | Leader | `bots/<Name>/headless.leader.json` 每 bot 独立 |
 
+登录分层（GitHub 宿主 / cliproxy / Telegram）见 [`doc/headless-daemon.md`](doc/headless-daemon.md)「登录与鉴权」。
+
 ### Codex 子命令（/codex）
 
 通过 Telegram 控制 **Codex CLI**（配置/会话仍在 `~/.codex`，任务 cwd 为 `~/.agents/workspace`，与 `/claude` 相同）。

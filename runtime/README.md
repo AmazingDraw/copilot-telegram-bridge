@@ -45,3 +45,9 @@ bash scripts/headless-daemon.sh restart
 
 - `bash scripts/vendor-copilot-runtime.sh --from-cache`：若本机还有 App 解过的 Caches
 - 或从另一台已 vendor 的机器拷 `runtime/<ver>/`，把 `VERSION` 写成该 `<ver>`
+
+## GitHub 登录
+
+`runtime/` 只解决 **有没有成对 CLI+pkg**。进程要起来，宿主仍要一份 GitHub Copilot 身份（OAuth / 带 Copilot 权限的 token）。日常推理可以全走 cliproxy，登录门禁还在 CLI 上。
+
+用**本目录**的 `cli/copilot login`，不要用 PATH 上另一份。步骤见 [`../doc/headless-daemon.md`](../doc/headless-daemon.md)「登录与鉴权」。

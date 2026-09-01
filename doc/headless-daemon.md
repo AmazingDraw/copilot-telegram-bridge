@@ -128,7 +128,35 @@ tail -50 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log
 
 ---
 
-## 6. 故障速查
+## 6. 登录与鉴权
+
+无头 **不需要 Copilot.app**，但宿主仍是闭源 Copilot CLI。GitHub 身份、cliproxy key、Telegram token 是三套凭证，失效时先对层再动手。
+
+| 层 | 失效长什么样 | 怎么办 |
+| :--- | :--- | :--- |
+| **GitHub Copilot 宿主** | 守护起不来、`client.start` / `listModels` 失败、官方模型 401 | 用 **vendored** 二进制重登（见下），再 `headless-daemon.sh restart` |
+| **cliproxy 上游** | Telegram 报 `auth_unavailable`、换模型才好 | **不是** GitHub 登录。查 `:8317` 是否起、key / 渠道 |
+| **Telegram 配对** | Bot 不理、要 6 位码 | 再发一条回配对码；或从 `config/access.json` 去掉该 user |
+
+日常 BYOK 走 cliproxy 时，中间那层更常见。`auth_unavailable` 按上游配额处理，不当本机 Copilot 掉线。
+
+重登宿主（必须和守护同一份 CLI，不要用 brew / PATH 上的 `copilot`）：
+
+```bash
+VER=$(tr -d '[:space:]' < ~/.copilot/extensions/copilot-telegram-bridge/runtime/VERSION)
+~/.copilot/extensions/copilot-telegram-bridge/runtime/${VER}/cli/copilot login
+bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh restart
+```
+
+本机桌面默认浏览器 OAuth；SSH / 无图形加 `--device-code`。
+
+CLI 还会按顺序读：`COPILOT_GITHUB_TOKEN` → `GH_TOKEN` → `GITHUB_TOKEN`。认 fine-grained PAT（**Copilot Requests**）、Copilot CLI OAuth、`gh` 的 Copilot OAuth。**不认经典 `ghp_`。** `gh auth status` 里已有 `copilot` scope 时，有时能直接被 CLI 用；仍 401 再跑上面的 `login`。
+
+Telegram token 在 `config/bots.json`（明文、勿提交）。废了去 BotFather `/revoke` 再写回并 restart。
+
+---
+
+## 7. 故障速查
 
 | 现象 | 优先查 |
 | :--- | :--- |
@@ -143,11 +171,12 @@ tail -50 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log
 | `stop` 后立刻回来 | KeepAlive → 必须用脚本 `stop`（含 bootout） |
 | 长轮无工具气泡 ≈3 分钟 | 可 `/stop` |
 | `auth_unavailable` | 上游鉴权/配额，引导 `/model`；不是本机登录失效 |
+| 宿主起不来 / 官方模型 401 | 第 6 节 GitHub Copilot 重登；勿与 cliproxy key 混用 |
 | HTTP2 `INTERNAL_ERROR` | 流断开，重试 |
 
 ---
 
-## 7. 路径
+## 8. 路径
 
 ```text
 ~/.copilot/extensions/copilot-telegram-bridge/
