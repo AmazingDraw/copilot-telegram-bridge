@@ -120,11 +120,11 @@ bash "$EXT" status
 
 launchctl print "gui/$(id -u)/com.copilot-telegram-bridge" | head
 curl -sS -m 5 -o /dev/null -w "mac %{http_code}\n" http://127.0.0.1:8317/v1/models
-curl -sS -m 8 -o /dev/null -w "nas %{http_code}\n" http://169.254.1.2:8317/v1/models
+curl -sS -m 8 -o /dev/null -w "nas %{http_code}\n" http://127.0.0.1:8317/v1/models
 tail -50 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log
 ```
 
-网关指针以 `switch-cliproxy-backend.sh status` 为准，不要把某一端写成永久默认。
+网关指针以 `cliproxy status` 为准，不要把某一端写成永久默认。
 
 ---
 

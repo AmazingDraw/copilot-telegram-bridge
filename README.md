@@ -2,11 +2,10 @@
 
 将 **GitHub Copilot CLI（无头会话）** 与 **Telegram Bot** 双向桥接：手机发消息 → 本机 agent 执行 → 回复、工具气泡、权限确认与 `ask_user` 回落到 Telegram。
 
-> 本机路径：`~/.copilot/extensions/copilot-telegram-bridge`（**先改这里**）  
-> 本机远端：`AmazingDraw/copilot-telegram-bridge`  
-> 开源镜像：`AmazingDraw/copilot-telegram-bridge`（改完跑 `bash scripts/sync-to-open-source.sh`）  
-> 开源故意不带提示词反推 Bot。  
-> **不再挂 Copilot.app / joinSession。** CLI+SDK 钉在 `runtime/`。
+> 扩展目录：`~/.copilot/extensions/copilot-telegram-bridge`  
+> 源码：本仓库  
+> **不挂 Copilot.app / joinSession。** CLI+SDK 钉在 `runtime/`。
+
 
 ---
 
@@ -21,7 +20,6 @@
 | Registry key | 角色 | 说明 |
 | :--- | :--- | :--- |
 | `Headless` | **无头主 bot** | `createSession` / `resumeSession`；BYOK + 用户 MCP；allow-all |
-| `SecondaryBot` | **专用无头** | 提示词反推；open-group / deny-all（开源镜像不含此 Bot） |
 
 - 注册表：`config/bots.json`（token 明文、**不进 Git**）
 - 每 bot 独立目录：`bots/<Name>/`（lock / state / leader）
@@ -108,7 +106,7 @@ createBotInstance(name, token)
 
 > 完整机制（CLI 缓存 / LaunchAgent / 排障 / MCP）：[`headless-daemon.md`](doc/headless-daemon.md)
 
-**上游**：CLI Proxy，密钥读 `~/.cli-proxy-api/config.yaml` 或 `CLIPROXY_API_KEY`。`baseUrl` 在本机 `http://127.0.0.1:8317/v1` 与 NAS 铜线 `http://169.254.1.2:8317/v1` 之间随时可切（NAS 不稳就切回本机）。看指针、切机用 `switch-cliproxy-backend.sh`，说明见 cli-proxy-api `references/mac-vs-nas-urls.md`。实际模型列表只看 `config/models.json` 的 `modelSets.headless`，会话 id 形如 `cliproxy/<id>`。
+**上游**：CLI Proxy（默认 `http://127.0.0.1:8317/v1`），密钥读 `~/.cli-proxy-api/config.yaml` 或 `CLIPROXY_API_KEY`。`baseUrl` 以运行中的 `config/models.json` / `CLIPROXY_BASE_URL` 为准。模型列表只看 `modelSets.headless`，会话 id 形如 `cliproxy/<id>`。
 
 **开关与回滚**（`config/models.json`，改完 `headless-daemon.sh restart`）：
 
@@ -237,19 +235,12 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 
 ## 安装与配置
 
-已作为 **用户扩展** 落在 `~/.copilot/extensions/copilot-telegram-bridge/`。
+已作为 **用户扩展** 落在 `~/.copilot/extensions/copilot-telegram-bridge/`。无头值班直接改 `config/bots.json` 后 `headless-daemon.sh restart`。
 
 ### 注册 Bot
 
-1. @BotFather 创建 bot，复制 token
-2. CLI / 会话内：
-
-```text
-/telegram setup <Name>     # 如 Headless；名允许 [A-Za-z0-9_-]
-# 粘贴 token
-/telegram connect <Name>
-```
-
+1. @BotFather 创建 bot，复制 token  
+2. 写入 `config/bots.json`（或在 Copilot CLI 会话里 `/telegram setup` / `/telegram connect`）  
 3. Telegram 发消息 → 终端看 6 位配对码 → 回发配对（5 分钟内）
 
 ### 卸载
@@ -298,4 +289,4 @@ node --check lib/*.mjs
 
 ## License
 
-MIT。本机先改 `AmazingDraw/copilot-telegram-bridge`，再 `bash scripts/sync-to-open-source.sh` 推开源镜像。开源不含提示词反推 Bot。
+MIT。

@@ -9,7 +9,7 @@ runtime/
   <ver>/pkg/              # 同版本整包（gitignore）
     copilot-sdk/
     preloads/extension_bootstrap.mjs
-    …                     # app.js / builtin / napi / wasm 等
+    …                     # app.js / napi / wasm 等（不包含 builtin / builtin-skills）
 ```
 
 `headless-daemon.sh` 实际执行：
@@ -37,7 +37,7 @@ bash scripts/headless-daemon.sh restart
 # 确认 status 里 align=vendored:<新版本>
 ```
 
-镜像可用 `NPM_REGISTRY`（默认 `https://registry.npmjs.org`）。包大约 300MB+。
+镜像可用 `NPM_REGISTRY`（默认 `https://registry.npmjs.org`）。包大约 300MB+。拷完会删掉 `pkg/builtin`、`pkg/builtin-skills` 以及 `.DS_Store` / `._*` / `.extraction-complete`。
 
 `npm i -g @github/copilot` / brew 装到 PATH 的仍不够：守护不读 PATH，要的是 `runtime/<ver>/cli` + 整包 `pkg/`。vendor 脚本拉的是 `@github/copilot-<plat>`，不是那个薄包装。
 

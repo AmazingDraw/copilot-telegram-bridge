@@ -10,6 +10,7 @@ bots/
 config/access.json
 config/bots.json
 .skills-allow/
+.playwright-mcp/
 /runtime/*
 !/runtime/README.md
 !/runtime/VERSION

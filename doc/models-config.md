@@ -83,7 +83,7 @@ config/models.json
 }
 ```
 
-provider 不再包含 `models[]` 对象。回滚时只切换 provider 的 `enabled`；同一时刻建议只启用一个第三方 provider。cliproxy 的 `baseUrl` 是 **值班指针**（Mac `127.0.0.1:8317` 或 NAS 铜线 `169.254.1.2:8317`），可随时切，以运行中的 json / `CLIPROXY_BASE_URL` 为准，不要把文档示例当成永久默认。见 cli-proxy-api skill `references/mac-vs-nas-urls.md`。
+provider 不再包含 `models[]` 对象。回滚时只切换 provider 的 `enabled`；同一时刻建议只启用一个第三方 provider。cliproxy 的 `baseUrl` 是 **值班指针**（Mac `127.0.0.1:8317` 或 `127.0.0.1:8317`），可随时切，以运行中的 json / `CLIPROXY_BASE_URL` 为准，不要把文档示例当成永久默认。见 cliproxy 文档。
 
 密钥解析优先级：
 
