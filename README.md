@@ -239,6 +239,14 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 
 已作为 **用户扩展** 落在 `~/.copilot/extensions/copilot-telegram-bridge/`。无头值班直接改 `config/bots.json` 后 `headless-daemon.sh restart`。
 
+全新机器 **不必先装 Copilot.app**。把本仓库放到上述目录（或软链过去），再：
+
+1. `bash scripts/vendor-copilot-runtime.sh`（npm 拉 CLI+pkg 进 `runtime/`）
+2. `runtime/<ver>/cli/copilot login`（会创建 `~/.copilot/` 里的凭证；会话盘在 `~/.copilot/session-state/`）
+3. 起 CLI Proxy `:8317`，写 `config/bots.json`，`headless-daemon.sh install`
+
+没有「以前装过 Copilot 留下的缓存」也能跑。缺的是 GitHub Copilot 身份 + cliproxy + Bot token，不是桌面 App。
+
 ### 注册 Bot
 
 1. @BotFather 创建 bot，复制 token  
@@ -277,15 +285,6 @@ node --check lib/*.mjs
 热更：`bash scripts/headless-daemon.sh restart`。换 CLI/SDK：`bash scripts/vendor-copilot-runtime.sh` 后再 restart。
 
 **同步方向**：本机扩展 → `sync-copilot-extensions.sh`（私有仓）→ `scripts/sync-to-open-source.sh`（开源镜像）。不要直接改开源目录。
-
-### 改动纪律（近期踩坑）
-
-1. **排版路径**未复现问题前不要改
-2. **ask_user 双发**只动 handler 停发，勿加 assistant 延迟去重
-3. **slash 必须** `stopTyping` + `dismissBubble`，否则 `bubbleActive` 会续命 60s debounce
-4. **`getRecentSessions` 只列 resumable**；切换前再校验
-5. **poll 心跳**节流（60s + 8s 超时），勿每轮堵 `model.list()`
-6. 隐藏回归：`lib` 用到的 `basename` 等必须在本模块 `import`
 
 ---
 
