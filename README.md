@@ -45,8 +45,8 @@ lib/
   bot-runtime.mjs      # sendQueue、typing、tool bubble、processUpdate、poll/lock
   bot-handlers.mjs     # session 事件 → TG；permission / ask_user 工厂
   bot-commands.mjs     # /session /clean /model /mode 与 callback
-  claude-commands.mjs  # /claude 子菜单 · FIFO
-  codex-commands.mjs   # /codex 子菜单 · FIFO
+  claude-commands.mjs  # /claude 子菜单 · FIFO；见 doc/claude-commands.md
+  codex-commands.mjs   # /codex 子菜单 · FIFO；见 doc/codex-commands.md
 config/models.json     # 模型唯一真源：catalog / modelSets / provider
 memory/                # 人设真源：AGENTS.md（仅本机仓，不开源）
 ```
@@ -157,6 +157,8 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 
 ### Codex 子命令（/codex）
 
+专文：[`doc/codex-commands.md`](doc/codex-commands.md)（瘦身旗标、排队打断、与 Copilot 人设是否重复）。
+
 通过 Telegram 控制 **Codex CLI**（配置/会话仍在 `~/.codex`，任务 cwd 为 `~/.agents/workspace`，与 `/claude` 相同）。
 
 ```bash
@@ -186,6 +188,8 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 - **进度存储**：`/tmp/telegram-bridge/codex/tasks.json`，任务完成自动裁剪至最新 50 条
 
 ### Claude 子命令（/claude）
+
+专文：[`doc/claude-commands.md`](doc/claude-commands.md)（开场裁剪、超时排队、配置项）。
 
 通过 Telegram 控制 **Claude Code CLI**（配置/会话仍在 `~/.claude`，任务 cwd 为 `~/.agents/workspace`）。直连 CLI Proxy `:8317` 的 Anthropic `/v1/messages`。
 

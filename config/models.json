@@ -12,7 +12,10 @@
     "claudeModelSet": "claude-cli",
     "claudeModelPrefix": "",
     "claudeHaikuModel": "cursor-auto",
-    "claudeSmallFastModel": "cursor-auto"
+    "claudeSmallFastModel": "cursor-auto",
+    "claudeBare": true,
+    "claudeStrictMcp": true,
+    "codexSlim": true
   },
   "display": {
     "officialModels": {
