@@ -56,6 +56,7 @@ import {
     evaluateInboundAccess,
     stripBotMention,
     loadAgentsFromPath,
+    loadBotCliproxyApiKey,
 } from "./lib/bot-profile.mjs";
 
 dns.setDefaultResultOrder("ipv4first");
@@ -546,10 +547,21 @@ function persistBotState() {
 
 /** 推送 Bot 命令菜单；瞬时网络失败重试，避免重启后 Telegram 仍显示旧菜单 */
 async function syncBotCommandsMenu(opts = {}) {
-    const commands = opts.commands || buildTelegramBotMenu({
-        includeReboot: !!opts.includeReboot,
-    });
+    const commands = Array.isArray(opts.commands)
+        ? opts.commands
+        : buildTelegramBotMenu({
+            includeReboot: !!opts.includeReboot,
+        });
     try {
+        if (commands.length === 0) {
+            await withTelegramFetchRetry(
+                `deleteMyCommands[${name}]`,
+                () => callTelegram("deleteMyCommands", {}),
+                { attempts: 4, baseDelayMs: 600 }
+            );
+            console.error(`telegram-bridge: [${name}] deleteMyCommands ok (empty menu)`);
+            return;
+        }
         await withTelegramFetchRetry(
             `setMyCommands[${name}]`,
             () => callTelegram("setMyCommands", { commands }),
@@ -560,7 +572,7 @@ async function syncBotCommandsMenu(opts = {}) {
         );
     } catch (err) {
         console.warn(
-            `telegram-bridge: [${name}] setMyCommands failed after retries:`,
+            `telegram-bridge: [${name}] setMyCommands/deleteMyCommands failed after retries:`,
             err.message
         );
     }
@@ -1473,6 +1485,7 @@ async function registerSlashCommand(sess) {
                                 systemMessageMode: botProfile.systemMessageMode || "customize",
                                 mcpServerNames: botProfile.mcpServerNames || null,
                                 skillNames: botProfile.skillNames || null,
+                                cliproxyApiKey: loadBotCliproxyApiKey(botProfile),
                             });
 
                             // 1) 可 resume 才走 resume（空壳只有 workspace.yaml 会 Session not found）
@@ -1634,8 +1647,9 @@ async function registerSlashCommand(sess) {
 
                             // 菜单/显示名均为 best-effort：绝不 await，避免 TG 瞬断阻塞 pollLoop 进入
                             {
-                                const restricted = !!botProfile.restrictedCommands;
-                                if (restricted) {
+                                if (Array.isArray(botProfile.commandsMenu)) {
+                                    void syncBotCommandsMenu({ commands: botProfile.commandsMenu });
+                                } else if (botProfile.restrictedCommands) {
                                     void syncBotCommandsMenu({
                                         commands: [
                                             { command: "new", description: "🆕 开启全新对话" },
