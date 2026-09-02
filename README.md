@@ -121,7 +121,7 @@ createBotInstance(name, token)
 
 **per-bot 模型锁**（`bots.json`）：推荐只写 `modelSet`；旧 `defaultModel` / `allowedModels` 仍兼容。
 
-**上下文窗口**：规格统一存于 `config/models.json`；无头 create/resume 时写入 SDK。详见 [`custom-models-context.md`](doc/custom-models-context.md)。
+**上下文窗口**：规格统一存于 `config/models.json`；无头 create/resume 时写入 SDK。详见 [`models-config.md`](doc/models-config.md)。
 
 ### 用户 MCP（无头显式加载）
 

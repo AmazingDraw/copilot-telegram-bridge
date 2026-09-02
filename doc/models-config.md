@@ -2,6 +2,7 @@
 
 > Bridge 的模型 ID、窗口、排序、Headless 列表、回滚列表与单 Bot 模型组，唯一真源都是 `config/models.json`。
 > 修改后运行校验并重启 Headless；不要再到代码或文档里复制模型清单。
+> Headless / Claude 菜单直接读 catalog；Codex 走自身 catalog，不回写 Bridge。
 
 ## 1. 文件结构
 
@@ -23,6 +24,16 @@ config/models.json
 - `bots.json` 推荐只保存 `modelSet` 名，不直接保存模型 ID。
 - `skillSets.<name>` 是可选的 Headless skill 白名单。默认 `skillSet=all` 不过滤；`bots.json` 可写 `skillSet` 或 `skillNames` 收窄。
 
+运行时谁读哪一段：
+
+| 路径 | 运行时读取 | 如何更新 |
+| :--- | :--- | :--- |
+| Headless Telegram Bot | `catalog` → SDK `ProviderModelConfig` | 改 catalog 后重启 Headless daemon |
+| Claude CLI（`/claude`） | `modelSets.claude-cli` + catalog id | 改 set / catalog 后重启 daemon |
+| Codex CLI（`/codex`） | `~/.codex` 与生成 catalog | 由 Codex / `ocx sync` 管理 |
+
+无头会话不读 `~/.copilot/data.db`；窗口只走 catalog → SDK。
+
 ## 2. Catalog 字段
 
 ```json
@@ -37,8 +48,6 @@ config/models.json
 }
 ```
 
-字段说明：
-
 | 字段 | 作用 |
 | :--- | :--- |
 | `label` | Telegram `/model` 显示名 |
@@ -46,6 +55,16 @@ config/models.json
 | `maxPromptTokens` | Headless SDK prompt 上限 |
 | `maxContextWindowTokens` | Headless SDK 总窗口 |
 | `maxOutputTokens` | Headless SDK 输出上限 |
+
+自定义/BYOK 模型若没有向 Copilot SDK 声明窗口，SDK 常回落 **128K**。create/resume 无头会话时 Bridge 把 catalog 字段传给 `ProviderModelConfig`：
+
+```text
+catalog.<id>.maxPromptTokens        → SDK maxPromptTokens
+catalog.<id>.maxContextWindowTokens → SDK maxContextWindowTokens
+catalog.<id>.maxOutputTokens        → SDK maxOutputTokens
+```
+
+`/claude` 增删只改 `modelSets.claude-cli` 与 catalog，不另写窗口表。`/codex` 不用这组数字当 allowlist。
 
 ## 3. Model Sets
 
@@ -141,6 +160,12 @@ python3 -m json.tool config/models.json >/dev/null
 bash scripts/headless-daemon.sh restart
 ```
 
+`--live` 成功时日志里应有：
+
+```text
+headless BYOK config ... providers=<provider> models=<provider>/<id>,...
+```
+
 常见错误：
 
 | 错误 | 含义 |
@@ -150,6 +175,13 @@ bash scripts/headless-daemon.sh restart
 | `defaultModel ... is not in the set` | 默认模型不属于该组 |
 | `cannot define both modelSet and models` | provider 同时使用新旧两套声明 |
 | `allowlist ∩ /models empty` | 配置 ID 与 live 上游目录不匹配 |
+
+| 现象 | 检查 |
+| :--- | :--- |
+| Headless 仍显示旧窗口 | 是否重启 daemon；模型是否属于启用 provider 的 model set；是否 `/new` |
+| live 模型缺失 | `--live` 核对上游 `/v1/models` |
+| 上游截断或 400 | catalog 声明值超过上游真实能力 |
+| `/claude` 列表不对 | `modelSets.claude-cli` 与 `defaults.claudeDefaultModel` |
 
 上游 `/v1/models` 只负责验证可用性，不会自动把新模型加入 Bridge，避免临时模型污染 Telegram 列表。
 
@@ -161,7 +193,7 @@ bash scripts/headless-daemon.sh restart
 | Bot token 与 modelSet 引用 | `config/bots.json` | 本机私密配置 |
 | Codex catalog | `~/.codex/opencodex-catalog.json` | `ocx sync` 生成 |
 
-生成产物不能反向作为 Bridge allowlist。
+生成产物（含 Codex catalog）不能反向作为 Bridge allowlist。实时列表只看 `modelSets`。
 
 ## 8. 同步
 
