@@ -43,15 +43,15 @@ claude -p … --output-format stream-json --bare --strict-mcp-config --model <sl
 | ✋ 停止 | SIGTERM，2s 后 SIGKILL；含 `stuck` 任务 |
 | 🚪 退出 | 清输入态 / 模型锁 / 计划 / 思考档 / 备援 |
 
-连续对话时发图会把本机路径写进 prompt。`/cancel`、`/stop`、`/claude exit` 退出输入态。
+连续对话时发图会把本机路径写进 prompt。/cancel、/stop、/claude exit 退出输入态。
 
 ---
 
 ## 2. 开场上下文：裁了啥、留了啥
 
-实测一次闲聊就要 **~2 万 input tokens**，且 `cache_read=0`。工作区 `~/.agents/workspace` 几乎是空的，膨胀来自 Claude Code **默认系统提示 + 工具 Schema + 技能/插件/MCP/CLAUDE.md**，不是仓库文件。
+实测一次闲聊就要 **~2 万 input tokens**，且 cache_read=0。工作区 ~/.agents/workspace 几乎是空的，膨胀来自 Claude Code **默认系统提示 + 工具 Schema + 技能/插件/MCP/CLAUDE.md**，不是仓库文件。
 
-因此 `/claude` **默认**加两个旗标：
+因此 /claude **默认**加两个旗标：
 
 | 旗标 | 配置 | 默认 |
 | :--- | :--- | :--- |
@@ -60,21 +60,24 @@ claude -p … --output-format stream-json --bare --strict-mcp-config --model <sl
 
 恢复全量：把对应项设为 `false`，再 `headless-daemon.sh restart`。
 
-### 2.1 `--bare` 裁掉的
+### 2.1 `--bare` 与 `--system-prompt` 裁掉的
 
 Claude Code 官方说明：跳过 hooks、LSP、plugin 同步、attribution、auto-memory、后台 prefetch、钥匙串读取、**CLAUDE.md 自动发现**。并设 `CLAUDE_CODE_SIMPLE=1`。
+此外，Bridge 通过显式传入 `--system-prompt "CWD: ${workDir}"` 顶掉了 Claude 默认注入的粗糙纯日期（`Date: YYYY-MM-DD`）。工作区 `~/.agents/workspace` 移除 `.git`，从源头彻底阻断了 GitStatus 探测。
 
 对应到开场注入，等于不再自动带上：
 
 | 裁掉 | 说明 |
 | :--- | :--- |
-| 用户/项目/本地 `CLAUDE.md` | 不再按目录树自动发现、注入 |
+| 用户/项目/本地 `CLAUDE.md` 自动发现 | 目录树不再扫描；**例外**：Bridge 只把 `~/.claude/CLAUDE.md` 拼进 `--system-prompt` |
 | hooks | 启停、工具前后钩子 |
 | LSP | 语言服务上下文 |
 | plugin 同步与插件工具 | 市场插件、额外 tool schema |
 | auto-memory | 自动记忆读写 |
 | 后台 prefetch | 预拉变更/上下文 |
 | 钥匙串 / OAuth 读凭据 | 认证只走 env 里的 `ANTHROPIC_AUTH_TOKEN`（cliproxy） |
+| **粗糙纯日期（`Date`）** | 由 `--system-prompt` 覆盖剔除，避免跨会话低精度噪音 |
+| **GitStatus 状态快照** | 工作区去 `.git` 后源头阻断，不再注入分支名、用户名、提交记录及未跟踪文件 |
 
 本机对话里曾经出现、现已不再默认注入的噪音（2026-09-01 实测）：
 
@@ -84,6 +87,7 @@ Claude Code 官方说明：跳过 hooks、LSP、plugin 同步、attribution、au
 - 偏重的 `Task*` 全家桶
 - 全量 Skills 长描述（即使当前只是问答）
 - 每轮重复的静态元数据（如 `total_tokens` 余量）
+- Git 快照与未跟踪文件噪音（如 `.DS_Store`）
 
 ### 2.2 `--strict-mcp-config` 裁掉的
 
@@ -97,7 +101,8 @@ Claude Code 官方说明：跳过 hooks、LSP、plugin 同步、attribution、au
 | :--- | :--- |
 | Claude Code 内置核心工具 | `Bash`、`Read`、`Write`、`Edit`、`Glob`、`Grep`、Web 搜索/抓取等 CLI 默认工具 |
 | `--dangerously-skip-permissions` | 非计划模式；Telegram 远程不能点本机权限窗 |
-| 工作目录 | `paths.claudeWorkDir`，默认 `~/.agents/workspace` |
+| 工作目录 | `paths.claudeWorkDir`，默认 `~/.agents/workspace`（通过 `--system-prompt` 注入） |
+| 本端人设 | `~/.claude/CLAUDE.md`；`--bare` 不会自动发现，Bridge 把它拼进 `--system-prompt`（CWD 之后）。人设只改这个文件，不同步仓库 |
 | 会话落盘 | `~/.claude/projects/…`；`--resume <uuid>` 续聊 |
 | 你在 Telegram 里打的 prompt | `-p` |
 | 模型 / 思考档 / 计划 | `--model`、`--effort`、`--permission-mode plan` |
@@ -192,5 +197,8 @@ stderr 里 `[claude-code:unrecognized_model]` 表示该 slug 不在 Claude Code 
 ## 6. 2026-09-02 流畅性补丁
 
 - 去掉 `CLAUDE_CODE_AUTO_COMPACT_WINDOW=829800`（几乎等于禁止压缩上下文）。
+- **彻底消除开场 GitStatus 与 Date 噪音**：
+  - `~/.agents/workspace` 移除 `.git` 与 `.DS_Store`（保留 `skills` 软链），从源头彻底阻断当前分支、用户名、提交记录及未跟踪文件快照组装；
+  - `lib/claude-commands.mjs` 注入 `--system-prompt`：先 `CWD: ${workDir}` 顶掉粗糙 `Date`，再附上 `~/.claude/CLAUDE.md`（`--bare` 不会自动加载人设）。
 - `/codex` 默认同款排队/停止/打断；Telegram 启动关闭 memories、桌面插件、Computer Use / Chrome / Calendar 等 MCP（`defaults.codexSlim`，可 `false` 恢复全量）。
-- `~/.codex/AGENTS.md` 人设仍会加载（CLI 没有跳过开关）；不要用 Telegram 任务去改这份记忆。
+- `~/.codex/AGENTS.md` 人设仍会加载（CLI 没有跳过开关）；不要用 Telegram 任务去改这份记忆。`/claude` 人设只读 `~/.claude/CLAUDE.md`。

@@ -568,6 +568,13 @@ async function syncBotCommandsMenu(opts = {}) {
                 { attempts: 4, baseDelayMs: 600 }
             );
         }
+        for (const scope of (Array.isArray(opts.deleteScopes) ? opts.deleteScopes : [])) {
+            await withTelegramFetchRetry(
+                `deleteMyCommands[${name}] ${scope?.type || "scope"}`,
+                () => callTelegram("deleteMyCommands", { scope }),
+                { attempts: 4, baseDelayMs: 600 }
+            );
+        }
         if (commands.length === 0) {
             for (const scope of scopes) {
                 await withTelegramFetchRetry(
@@ -1696,11 +1703,23 @@ async function registerSlashCommand(sess) {
                                     const scopes = (botProfile.requireImage && Array.isArray(botProfile.allowedChats))
                                         ? botProfile.allowedChats.map((id) => ({ type: "chat", chat_id: Number(id) }))
                                         : [];
+                                    const vipPublic = !!(botProfile.requireImage && vip?.isPublicEnabled?.());
                                     void syncBotCommandsMenu({
                                         commands: botProfile.commandsMenu,
                                         scopes,
                                         clearDefault: !!botProfile.denyPrivate,
-                                        extra: [],
+                                        extra: vipPublic
+                                            ? [{
+                                                commands: [
+                                                    { command: "vip", description: "开通会员（USDC）" },
+                                                    { command: "vip_status", description: "会员状态" },
+                                                ],
+                                                scopes: [{ type: "all_private_chats" }],
+                                            }]
+                                            : [],
+                                        deleteScopes: (botProfile.requireImage && !vipPublic)
+                                            ? [{ type: "all_private_chats" }]
+                                            : [],
                                     });
                                 } else if (botProfile.restrictedCommands) {
                                     void syncBotCommandsMenu({
