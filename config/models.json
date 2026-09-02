@@ -72,18 +72,6 @@
       "maxContextWindowTokens": 1000000,
       "maxOutputTokens": 65536
     },
-    "gemini-3.7-flash-high": {
-      "label": "Gemini 3.7 Flash High",
-      "maxPromptTokens": 1000000,
-      "maxContextWindowTokens": 1000000,
-      "maxOutputTokens": 65536
-    },
-    "claude-sonnet-4-6": {
-      "label": "Claude Sonnet 4.6",
-      "maxPromptTokens": 200000,
-      "maxContextWindowTokens": 200000,
-      "maxOutputTokens": 16384
-    },
     "cursor-auto": {
       "label": "Cursor Auto",
       "maxPromptTokens": 256000,
@@ -165,7 +153,6 @@
         "gemini-flash",
         "deepseek-v4-flash",
         "deepseek-v4-pro",
-        "claude-sonnet-4-6",
         "cursor-auto",
         "cursor-grok-4.6-high",
         "kimi-k3-high",
@@ -178,8 +165,7 @@
       "models": [
         "deepseek-v4-flash",
         "deepseek-v4-pro",
-        "gemini-3.7-flash-high",
-        "claude-sonnet-4-6",
+        "gemini-flash",
         "cursor-auto",
         "cursor-grok-4.6-low",
         "cursor-grok-4.6-medium",
