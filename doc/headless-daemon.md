@@ -1,7 +1,7 @@
 # 无头 Bot（Headless）运行机制
 
 > 扩展：`~/.copilot/extensions/copilot-telegram-bridge`  
-> 模型：[`models-config.md`](./models-config.md) · 人设：[`system-prompts.md`](./system-prompts.md) · runtime：[`../runtime/README.md`](../runtime/README.md)
+> 模型：[`models-config.md`](./models-config.md) · 人设：[`system-prompts.md`](./system-prompts.md) · runtime：[`../runtime/README.md`](../runtime/README.md)  
 
 无头主路径是 **LaunchAgent 常驻守护**，**不依赖 GitHub Copilot 桌面 App**。CLI / SDK / bootstrap 钉在扩展目录 `runtime/`（见 [`../runtime/README.md`](../runtime/README.md)）。
 

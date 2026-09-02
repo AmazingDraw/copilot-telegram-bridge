@@ -14,3 +14,6 @@ config/bots.json
 /runtime/*
 !/runtime/README.md
 !/runtime/VERSION
+config/secrets.json
+members.json
+crypto-orders.json

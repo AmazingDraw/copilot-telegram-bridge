@@ -53,6 +53,7 @@ import { attachRuntime } from "./lib/bot-runtime.mjs";
 import {
     resolveBotProfile,
     createCooldownTracker,
+    createDailyQuotaTracker,
     evaluateInboundAccess,
     stripBotMention,
     loadAgentsFromPath,
@@ -238,6 +239,11 @@ function createBotInstance(name, token, isHeadless, botRegistryEntry = {}, enabl
     const cooldown = createCooldownTracker({
         botDir: join(BOTS_DIR, name),
         cooldownSec: botProfile.cooldownSec,
+    });
+    const dailyQuota = createDailyQuotaTracker({
+        botDir: join(BOTS_DIR, name),
+        dailyLimit: botProfile.dailyLimit,
+        timeZone: botProfile.dailyLimitTz,
     });
     let state;
     let session;
@@ -552,23 +558,61 @@ async function syncBotCommandsMenu(opts = {}) {
         : buildTelegramBotMenu({
             includeReboot: !!opts.includeReboot,
         });
+    const scopes = Array.isArray(opts.scopes) ? opts.scopes.filter(Boolean) : [];
+    const clearDefault = opts.clearDefault === true || commands.length === 0;
     try {
-        if (commands.length === 0) {
+        if (clearDefault) {
             await withTelegramFetchRetry(
-                `deleteMyCommands[${name}]`,
+                `deleteMyCommands[${name}] default`,
                 () => callTelegram("deleteMyCommands", {}),
                 { attempts: 4, baseDelayMs: 600 }
             );
+        }
+        if (commands.length === 0) {
+            for (const scope of scopes) {
+                await withTelegramFetchRetry(
+                    `deleteMyCommands[${name}] scoped`,
+                    () => callTelegram("deleteMyCommands", { scope }),
+                    { attempts: 4, baseDelayMs: 600 }
+                );
+            }
             console.error(`telegram-bridge: [${name}] deleteMyCommands ok (empty menu)`);
             return;
         }
-        await withTelegramFetchRetry(
-            `setMyCommands[${name}]`,
-            () => callTelegram("setMyCommands", { commands }),
-            { attempts: 4, baseDelayMs: 600 }
-        );
+        const batches = [
+            { commands, scopes: scopes.length ? scopes : [null] },
+            ...((Array.isArray(opts.extra) ? opts.extra : []).map((x) => ({
+                commands: x.commands,
+                scopes: Array.isArray(x.scopes) && x.scopes.length ? x.scopes : [null],
+            }))),
+        ];
+        let ok = 0;
+        let total = 0;
+        for (const batch of batches) {
+            if (!Array.isArray(batch.commands) || batch.commands.length === 0) continue;
+            for (const scope of batch.scopes) {
+                total += 1;
+                const payload = scope ? { commands: batch.commands, scope } : { commands: batch.commands };
+                const label = scope?.chat_id != null
+                    ? `chat:${scope.chat_id}`
+                    : (scope?.type || "default");
+                try {
+                    await withTelegramFetchRetry(
+                        `setMyCommands[${name}] ${label}`,
+                        () => callTelegram("setMyCommands", payload),
+                        { attempts: 4, baseDelayMs: 600 }
+                    );
+                    ok += 1;
+                } catch (err) {
+                    console.warn(
+                        `telegram-bridge: [${name}] setMyCommands failed scope=${label}:`,
+                        err.message
+                    );
+                }
+            }
+        }
         console.error(
-            `telegram-bridge: [${name}] setMyCommands ok (${commands.length} cmds)`
+            `telegram-bridge: [${name}] setMyCommands ok (${ok}/${total || 1} scope(s))`
         );
     } catch (err) {
         console.warn(
@@ -823,6 +867,7 @@ const ctx = {
     get activeReplyChatId() { return activeReplyChatId; },
     set activeReplyChatId(v) { activeReplyChatId = v; },
     cooldown,
+    dailyQuota,
     evaluateInboundAccess,
     stripBotMention,
     loadAgentsFromPath,
@@ -1648,7 +1693,15 @@ async function registerSlashCommand(sess) {
                             // 菜单/显示名均为 best-effort：绝不 await，避免 TG 瞬断阻塞 pollLoop 进入
                             {
                                 if (Array.isArray(botProfile.commandsMenu)) {
-                                    void syncBotCommandsMenu({ commands: botProfile.commandsMenu });
+                                    const scopes = (botProfile.requireImage && Array.isArray(botProfile.allowedChats))
+                                        ? botProfile.allowedChats.map((id) => ({ type: "chat", chat_id: Number(id) }))
+                                        : [];
+                                    void syncBotCommandsMenu({
+                                        commands: botProfile.commandsMenu,
+                                        scopes,
+                                        clearDefault: !!botProfile.denyPrivate,
+                                        extra: [],
+                                    });
                                 } else if (botProfile.restrictedCommands) {
                                     void syncBotCommandsMenu({
                                         commands: [
@@ -1812,10 +1865,19 @@ async function main() {
         if (BRIDGE_MODE && BRIDGE_MODE !== "headless-only" && BRIDGE_MODE !== "all") {
             console.error(`telegram-bridge: TELEGRAM_BRIDGE_MODE=${BRIDGE_MODE} ignored (headless-only)`);
         }
+        const chatNotes = (bot.allowedChatNotes && typeof bot.allowedChatNotes === "object")
+            ? bot.allowedChatNotes
+            : {};
+        const chatList = (profile.allowedChats || []).map((id) => {
+            const note = chatNotes[String(id)];
+            return note ? `${id}:${note}` : String(id);
+        }).join(",");
         console.error(
             `telegram-bridge: boot bot='${name}' role=${profile.role} profile=${profile.profile || "-"} ` +
             `access=${profile.accessMode} perm=${profile.permissionMode} cd=${profile.cooldownSec}s ` +
-            `mcp=${profile.loadMcp === false ? "off" : "on"}`
+            `mcp=${profile.loadMcp === false ? "off" : "on"}` +
+            (profile.dailyLimit > 0 ? ` quota=${profile.dailyLimit}/day` : "") +
+            (chatList ? ` chats=${chatList}` : "")
         );
         const instance = createBotInstance(name, bot.token, isHeadless, bot, i);
         activeInstances.push(instance);
