@@ -240,10 +240,12 @@ function createBotInstance(name, token, isHeadless, botRegistryEntry = {}, enabl
         botDir: join(BOTS_DIR, name),
         cooldownSec: botProfile.cooldownSec,
     });
+    const vip = null;
     const dailyQuota = createDailyQuotaTracker({
         botDir: join(BOTS_DIR, name),
         dailyLimit: botProfile.dailyLimit,
         timeZone: botProfile.dailyLimitTz,
+        getLimit: vip ? (id) => vip.dailyLimitFor(id) : undefined,
     });
     let state;
     let session;
@@ -875,6 +877,7 @@ const ctx = {
     set activeReplyChatId(v) { activeReplyChatId = v; },
     cooldown,
     dailyQuota,
+    vip,
     evaluateInboundAccess,
     stripBotMention,
     loadAgentsFromPath,
@@ -991,7 +994,7 @@ const {
     bubbleMessageIds,
     allBubbleIds,
 } = attachRuntime(ctx);
-
+    
 // 2) Access control (needs enqueue)
 // ============================================================
 // Section 6: Access Control & Pairing
@@ -1500,18 +1503,7 @@ async function registerSlashCommand(sess) {
                                 console.error(`telegram-bridge: [${name}] listModels failed:`, listErr.message);
                             }
 
-                            // per-bot agentsMd 优先，否则 models.json paths.agentsMd（默认 memory/AGENTS.md）
-                            const customInstructions = loadAgentsFromPath(
-                                botProfile.agentsMd,
-                                () => loadAgentsMdInstructions()
-                            );
-                            if (customInstructions) {
-                                console.error(
-                                    `telegram-bridge: [${name}] loaded AGENTS.md instructions (${customInstructions.length} chars` +
-                                    (botProfile.agentsMd ? `, profile=${botProfile.profile || "custom"}` : ", global") +
-                                    `)`
-                                );
-                            }
+                            const customInstructions = loadAgentsFromPath(botProfile.agentsMd, () => loadAgentsMdInstructions()); if (customInstructions) { console.error(`telegram-bridge: [${name}] loaded AGENTS.md instructions (${customInstructions.length} chars${botProfile.agentsMd ? `, profile=${botProfile.profile || "custom"}` : ", global"})`); }
 
                             const lastModelId = typeof readBotModel === "function" ? readBotModel(name) : null;
                             const desiredModel = pickStickySessionModel({
@@ -1708,18 +1700,8 @@ async function registerSlashCommand(sess) {
                                         commands: botProfile.commandsMenu,
                                         scopes,
                                         clearDefault: !!botProfile.denyPrivate,
-                                        extra: vipPublic
-                                            ? [{
-                                                commands: [
-                                                    { command: "vip", description: "开通会员（USDC）" },
-                                                    { command: "vip_status", description: "会员状态" },
-                                                ],
-                                                scopes: [{ type: "all_private_chats" }],
-                                            }]
-                                            : [],
-                                        deleteScopes: (botProfile.requireImage && !vipPublic)
-                                            ? [{ type: "all_private_chats" }]
-                                            : [],
+                                        extra: [],
+                                        deleteScopes: [],
                                     });
                                 } else if (botProfile.restrictedCommands) {
                                     void syncBotCommandsMenu({
