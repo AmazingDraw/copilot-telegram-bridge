@@ -4,7 +4,6 @@
   "officialFallback": "cliproxy/deepseek-v4-flash",
   "defaults": {
     "maxContextWindowTokens": 200000,
-    "codexWaitTimeoutMs": 3600000,
     "claudeWaitTimeoutMs": 3600000,
     "claudeDefaultModel": "gemini-flash",
     "claudeFallbackModel": "deepseek-v4-flash",
@@ -14,8 +13,7 @@
     "claudeHaikuModel": "cursor-auto",
     "claudeSmallFastModel": "cursor-auto",
     "claudeBare": true,
-    "claudeStrictMcp": true,
-    "codexSlim": true
+    "claudeStrictMcp": true
   },
   "display": {
     "officialModels": {
@@ -33,9 +31,6 @@
     "agentsMd": "memory/AGENTS.md",
     "sessionState": "${HOME}/.copilot/session-state",
     "mcpConfig": "${HOME}/.copilot/mcp-config.json",
-    "codexAgentsDir": "${HOME}/.agents/workspace",
-    "codexSessionDir": "${HOME}/.codex/sessions",
-    "codexStateDir": "/tmp/telegram-bridge/codex",
     "claudeWorkDir": "${HOME}/.agents/workspace",
     "claudeSessionDir": "${HOME}/.claude",
     "claudeStateDir": "/tmp/telegram-bridge/claude"
@@ -194,22 +189,7 @@
   },
   "providers": [
     {
-      "$comment": "[回滚开关] OpenCodex 10100：把本组 enabled=true 并把 cliproxy 组 enabled=false。",
-      "id": "opencodex",
-      "enabled": false,
-      "type": "openai",
-      "baseUrl": "http://127.0.0.1:10100/v1",
-      "baseUrlEnv": [
-        "OPENCODEX_BASE_URL"
-      ],
-      "apiKeyEnv": [
-        "OPENCODEX_API_KEY"
-      ],
-      "apiKeyFromFile": "${HOME}/.opencodex/admin-api-token",
-      "modelSet": "headless"
-    },
-    {
-      "$comment": "[回滚开关] OpenCode：把本组 enabled=true 并把 opencodex 组 enabled=false。",
+      "$comment": "[回滚开关] OpenCode：把本组 enabled=true 并把 cliproxy 组 enabled=false。",
       "id": "opencode",
       "enabled": false,
       "type": "openai",

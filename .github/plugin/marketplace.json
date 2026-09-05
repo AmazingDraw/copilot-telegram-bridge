@@ -11,7 +11,7 @@
     {
       "name": "telegram-bridge",
       "source": ".",
-      "description": "Headless Telegram bridge for GitHub Copilot CLI. Vendored CLI+SDK, no Copilot.app. Multi-bot, sessions, cliproxy models; optional /codex and /claude.",
+      "description": "Headless Telegram bridge for GitHub Copilot CLI. Vendored CLI+SDK, no Copilot.app. Multi-bot, sessions, cliproxy models; optional /claude.",
       "version": "1.0.0",
       "author": {
         "name": "examon",

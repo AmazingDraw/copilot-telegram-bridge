@@ -2,7 +2,7 @@
 
 > Bridge 的模型 ID、窗口、排序、Headless 列表、回滚列表与单 Bot 模型组，唯一真源都是 `config/models.json`。
 > 修改后运行校验并重启 Headless；不要再到代码或文档里复制模型清单。
-> Headless / Claude 菜单直接读 catalog；Codex 走自身 catalog，不回写 Bridge。
+> Headless / Claude 菜单直接读 catalog。
 
 ## 1. 文件结构
 
@@ -30,7 +30,6 @@ config/models.json
 | :--- | :--- | :--- |
 | Headless Telegram Bot | `catalog` → SDK `ProviderModelConfig` | 改 catalog 后重启 Headless daemon |
 | Claude CLI（`/claude`） | `modelSets.claude-cli` + catalog id | 改 set / catalog 后重启 daemon |
-| Codex CLI（`/codex`） | `~/.codex` 与生成 catalog | 由 Codex / `ocx sync` 管理 |
 
 无头会话不读 `~/.copilot/data.db`；窗口只走 catalog → SDK。
 
@@ -64,7 +63,7 @@ catalog.<id>.maxContextWindowTokens → SDK maxContextWindowTokens
 catalog.<id>.maxOutputTokens        → SDK maxOutputTokens
 ```
 
-`/claude` 增删只改 `modelSets.claude-cli` 与 catalog，不另写窗口表。`/codex` 不用这组数字当 allowlist。
+`/claude` 增删只改 `modelSets.claude-cli` 与 catalog，不另写窗口表。
 
 ## 3. Model Sets
 
@@ -102,7 +101,7 @@ catalog.<id>.maxOutputTokens        → SDK maxOutputTokens
 }
 ```
 
-provider 不再包含 `models[]` 对象。回滚时只切换 provider 的 `enabled`；同一时刻建议只启用一个第三方 provider。cliproxy 的 `baseUrl` 是 **值班指针**（Mac `127.0.0.1:8317` 或 `127.0.0.1:8317`），可随时切，以运行中的 json / `CLIPROXY_BASE_URL` 为准，不要把文档示例当成永久默认。见 cliproxy 文档。
+provider 不再包含 `models[]` 对象。回滚时只切换 provider 的 `enabled`；同一时刻建议只启用一个第三方 provider。cliproxy 的 `baseUrl` 是 **值班指针**（Mac `127.0.0.1:8317` 或 `127.0.0.1:8317`），可随时切，以运行中的 json / `CLIPROXY_BASE_URL` 为准，不要把文档示例当成永久默认。见 cli-proxy-api skill `references/mac-vs-nas-urls.md`。
 
 密钥解析优先级：
 
@@ -191,9 +190,8 @@ headless BYOK config ... providers=<provider> models=<provider>/<id>,...
 | :--- | :--- | :--- |
 | 唯一模型真源 | `config/models.json` | 人工维护 |
 | Bot token 与 modelSet 引用 | `config/bots.json` | 本机私密配置 |
-| Codex catalog | `~/.codex/opencodex-catalog.json` | `ocx sync` 生成 |
 
-生成产物（含 Codex catalog）不能反向作为 Bridge allowlist。实时列表只看 `modelSets`。
+生成产物不能反向作为 Bridge allowlist。实时列表只看 `modelSets`。
 
 ## 8. 同步
 

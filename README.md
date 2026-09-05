@@ -46,7 +46,6 @@ lib/
   bot-handlers.mjs     # session 事件 → TG；permission / ask_user 工厂
   bot-commands.mjs     # /session /clean /model /mode 与 callback
   claude-commands.mjs  # /claude 子菜单 · FIFO；见 doc/claude-commands.md
-  codex-commands.mjs   # /codex 子菜单 · FIFO；见 doc/codex-commands.md
 config/models.json     # 模型唯一真源：catalog / modelSets / provider
 memory/                # 人设真源：AGENTS.md（仅本机仓，不开源）
 ```
@@ -114,7 +113,6 @@ createBotInstance(name, token)
 - **单场景成员关系**：编辑对应 `modelSets.<name>.models`
 - **整组上游开关**：provider 级 `enabled: false`，每个 provider 只用 `modelSet` 引用模型组
 - **保留的回滚组**（默认全 `enabled: false`）：
-  - `opencodex` — OpenCodex 10100（`apiKeyFromFile`）
   - `opencode` — OpenCode Go 直连（`OPENCODE_API_KEY`）
   - `deepseek` — DeepSeek 官方 API
 - **官方模型回退**：`officialFallback`，从 Copilot 目录走
@@ -154,38 +152,6 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 | Leader | `bots/<Name>/headless.leader.json` 每 bot 独立 |
 
 登录分层（GitHub 宿主 / cliproxy / Telegram）见 [`doc/headless-daemon.md`](doc/headless-daemon.md)「登录与鉴权」。
-
-### Codex 子命令（/codex）
-
-专文：[`doc/codex-commands.md`](doc/codex-commands.md)（瘦身旗标、排队打断、与 Copilot 人设是否重复）。
-
-通过 Telegram 控制 **Codex CLI**（配置/会话仍在 `~/.codex`，任务 cwd 为 `~/.agents/workspace`，与 `/claude` 相同）。
-
-```bash
-/codex                    # 打开子命令菜单
-/codex <prompt>           # 直接新对话执行（不走菜单）
-```
-
-| 菜单项 | callback | 说明 |
-| :--- | :--- | :--- |
-| 💬 新建对话 | `codex:new` | 进入新对话输入态，直接执行 |
-| 🎛 切换模型 | `codex:model` | 列出可用模型（3 列）；**仅当前对话生效**，退出模式恢复默认 |
-| 📂 继续对话 | `codex:resume` | 历史会话列表（智能意图标题、按实际时间排序、去重、序号 ①-⑩ 视觉等宽对齐） |
-| 📊 查看进度 | `codex:progress` | 最近 10 条任务状态（含错误原因）；存储自动裁剪至 50 条 |
-| 🖥 关闭桌面 | `codex:desktop` | 检测/关闭 ChatGPT 桌面端（CLI 需桌面关闭才能正常响应） |
-| 🚪 退出桥接 | `codex:exit` | 退出连续对话，恢复默认模型 |
-
-**关键设计**：
-
-- **智能错误诊断与中断保护**：自动清洗 `stderr` 提取真实报错（429 限流 / 401 凭据 / 50x 网关 / 上下文超限 / 桌面端锁冲突 / OOM exit=137 等）并附带排查建议；模型意外中断时**保留已生成正文**并追加中断说明，告别模糊报错
-- **桌面端检测**：新建/续接对话前检测 ChatGPT 桌面端是否运行，开着 → 提示先关闭（附「🖥 关闭桌面」按钮）；`codex:desktop` 内置实现 kill 桌面进程（不等外部脚本）
-- **指令排队**：同一会话有 running 任务时，新指令**入队不丢弃**，任务结束后自动执行下一条（FIFO）；排队提示附「✋ 停止任务 / 🗑 取消排队」按钮
-- **停止/取消**：`codex:stop` 对运行中任务 SIGTERM（5s 兜底 SIGKILL）标记 cancelled；`codex:cancelqueued` 清空排队指令
-- **模型切换**：`ctx.codexModel` 存于运行时（不写 `~/.codex/config.toml`），发任务时注入 `codex exec -m <model>`；模型列表来自 `~/.codex/opencodex-catalog.json`，**排除 `~/.opencodex/config.json` 的 `disabledModels`**
-- **发图**：Codex 模式下直接发图片/文档 → `handleFileAttachment` 下载落盘 → `codex exec -i <path>`；无 caption 用默认提示词「请分析这张图片。」
-- **防卡后缀**：prompt 不再追加「任务完成后…」提示词（会污染历史标题）
-- **会话去重**：历史列表按 `session_meta.payload.session_id`（纯 UUID）去重；`codex exec resume` 必须用纯 UUID，文件名带时间戳前缀会被当新会话
-- **进度存储**：`/tmp/telegram-bridge/codex/tasks.json`，任务完成自动裁剪至最新 50 条
 
 ### Claude 子命令（/claude）
 
@@ -294,4 +260,4 @@ node --check lib/*.mjs
 
 ## License
 
-MIT。
+MIT。本机先改 `AmazingDraw/copilot-telegram-bridge`，再 `sync-to-open-source.sh` 推镜像。

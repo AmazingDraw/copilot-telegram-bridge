@@ -124,7 +124,7 @@ curl -sS -m 8 -o /dev/null -w "nas %{http_code}\n" http://127.0.0.1:8317/v1/mode
 tail -50 ~/.copilot/extensions/copilot-telegram-bridge/bots/Headless/daemon.log
 ```
 
-网关指针以 `cliproxy status` 为准，不要把某一端写成永久默认。
+网关指针以 `switch-cliproxy-backend.sh status` 为准，不要把某一端写成永久默认。
 
 ---
 

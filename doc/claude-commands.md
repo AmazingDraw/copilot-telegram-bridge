@@ -4,7 +4,7 @@
 > 配置：`config/models.json` → `defaults.claude*`、`modelSets.claude-cli`  
 > 无头守护：[`headless-daemon.md`](./headless-daemon.md) · 模型目录：[`models-config.md`](./models-config.md)
 
-Telegram 里的 `/claude` **不是** Copilot 无头会话。它 `spawn("claude", …)` 调本机 **Claude Code CLI**，经 CLI Proxy `:8317` 的 Anthropic `/v1/messages` 出网（不经 OpenCodex）。
+Telegram 里的 `/claude` **不是** Copilot 无头会话。它 `spawn("claude", …)` 调本机 **Claude Code CLI**，经 CLI Proxy `:8317` 的 Anthropic `/v1/messages` 出网。
 
 ```text
 Telegram /claude
@@ -197,6 +197,4 @@ stderr 里 `[claude-code:unrecognized_model]` 表示该 slug 不在 Claude Code 
 
 - 去掉 `CLAUDE_CODE_AUTO_COMPACT_WINDOW=829800`（几乎等于禁止压缩上下文）。
 - **开场 GitStatus**：`~/.agents/workspace` 移除 `.git` 与 `.DS_Store`（保留 `skills` 软链），从源头阻断分支名、用户名、提交记录及未跟踪文件快照。默认 `Date` 不再用 `--system-prompt` 覆盖。
-- **人设**：`lib/claude-commands.mjs` 用 `--append-system-prompt` 追加 `~/.claude/CLAUDE.md`（`--bare` 不会自动加载）。
-- `/codex` 默认同款排队/停止/打断；Telegram 启动关闭 memories、桌面插件、Computer Use / Chrome / Calendar 等 MCP（`defaults.codexSlim`，可 `false` 恢复全量）。
-- `~/.codex/AGENTS.md` 人设仍会加载（CLI 没有跳过开关）；不要用 Telegram 任务去改这份记忆。`/claude` 人设只读 `~/.claude/CLAUDE.md`。
+- **人设**：`lib/claude-commands.mjs` 用 `--append-system-prompt` 追加 `~/.claude/CLAUDE.md`（`--bare` 不会自动加载）；人设只读 `~/.claude/CLAUDE.md`。
