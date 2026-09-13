@@ -12,6 +12,32 @@ set -euo pipefail
 EXT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PID_FILE="${EXT_DIR}/bots/Headless/daemon.pid"
 LOG_FILE="${EXT_DIR}/bots/Headless/daemon.log"
+
+# 统一日志时间戳：桥侧在进程内给 console.* 加前缀（见 extension.mjs 顶部），
+# 本脚本自己的输出走这里 —— 两条路径格式一致（`MM-DD HH:MM:SS`），事后定位才不用数行号。
+log() { printf '[%s] %s\n' "$(date '+%m-%d %H:%M:%S')" "$*" >>"${LOG_FILE}"; }
+
+# 日志按大小轮转（无外部依赖）。超限时只留最近 keep 字节，并记一条说明。
+# 阈值可用 LOG_ROTATE_MAX_BYTES / LOG_ROTATE_KEEP_BYTES 覆盖；也可传参便于自测：
+#   rotate_log_if_needed <file> <maxBytes> <keepBytes>
+rotate_log_if_needed() {
+  local file="${1:-${LOG_FILE}}"
+  local max="${2:-${LOG_ROTATE_MAX_BYTES:-8388608}}"    # 默认 8MB 触发
+  local keep="${3:-${LOG_ROTATE_KEEP_BYTES:-2097152}}"  # 默认保留最近 2MB
+  [[ -f "${file}" ]] || return 0
+  local size=0
+  size="$(stat -f%z "${file}" 2>/dev/null || stat -c%s "${file}" 2>/dev/null || echo 0)"
+  [[ "${size}" -gt "${max}" ]] || return 0
+  local tmp="${file}.rotating.$$"
+  # tail -n +2：丢掉可能被从中间截断的首行，只留完整行
+  tail -c "${keep}" "${file}" | tail -n +2 >"${tmp}" 2>/dev/null || true
+  {
+    printf '[%s] headless-daemon: 日志轮转（原 %s 字节 → 保留最近约 %s 字节）\n' \
+      "$(date '+%m-%d %H:%M:%S')" "${size}" "${keep}"
+    cat "${tmp}" 2>/dev/null || true
+  } >"${file}"
+  rm -f "${tmp}"
+}
 STATE_DIR="${HOME}/.copilot/session-state"
 RUNTIME_ROOT="${EXT_DIR}/runtime"
 PLIST_SRC="$(cd "$(dirname "$0")" && pwd)/com.copilot-telegram-bridge.plist"
@@ -57,8 +83,13 @@ ensure_bootstrap_compat() {
   # 软化逻辑的唯一真源：scripts/patch-bootstrap-compat.py（daemon / vendor / preflight 三处共用）。
   # 不要再在别处抄门闩正则 —— 否则「升级前检查器」和「实际行为」会各说一套。
   [[ -n "${BOOTSTRAP:-}" && -f "${BOOTSTRAP}" ]] || return 0
-  python3 "${EXT_DIR}/scripts/patch-bootstrap-compat.py" --prefix headless-daemon "${BOOTSTRAP}" \
-    >>"${LOG_FILE}" 2>&1 || true
+  # 子进程 stdout 不带时间戳 → 抓回来经 log() 统一加前缀
+  local out
+  out="$(python3 "${EXT_DIR}/scripts/patch-bootstrap-compat.py" --prefix headless-daemon "${BOOTSTRAP}" 2>&1 || true)"
+  if [[ -n "${out}" ]]; then
+    printf '%s\n' "${out}" | while IFS= read -r line; do log "${line}"; done
+  fi
+  return 0
 }
 
 require_runtime() {
@@ -93,7 +124,7 @@ require_runtime() {
   fi
   # 探针：共享缓存 pkg 若又出现，说明 CLI 没走 DIST_DIR（或别的进程重建了它）
   if [[ -d "${HOME}/Library/Caches/copilot/pkg" ]]; then
-    echo "headless-daemon: warn: ${HOME}/Library/Caches/copilot/pkg 存在（DIST_DIR 可能未生效 / 有别的进程在用）" >>"${LOG_FILE}"
+    log "headless-daemon: warn: ${HOME}/Library/Caches/copilot/pkg 存在（DIST_DIR 可能未生效 / 有别的进程在用）"
   fi
 }
 
@@ -228,6 +259,8 @@ run_daemon() {
   resolve_runtime
   require_runtime
   mkdir -p "${EXT_DIR}/bots/Headless" "${STATE_DIR}"
+  # 启动即按大小轮转（今天崩循环时 10 分钟涨 4MB —— 不轮转会无限增长）
+  rotate_log_if_needed
   # 必须在 exec 前：桌面更新会覆盖 bootstrap，每次启动幂等软化父进程门闩
   ensure_bootstrap_compat
 
@@ -257,10 +290,10 @@ run_daemon() {
   fi
   export HOME
 
-  echo "headless-daemon: run pid=$$ bin=${COPILOT_BIN}" >>"${LOG_FILE}"
-  echo "headless-daemon: sdk=${SDK_PATH}" >>"${LOG_FILE}"
-  echo "headless-daemon: dist=${DIST_DIR}" >>"${LOG_FILE}"
-  echo "headless-daemon: align=${RUNTIME_ALIGN}" >>"${LOG_FILE}"
+  log "headless-daemon: run pid=$$ bin=${COPILOT_BIN}"
+  log "headless-daemon: sdk=${SDK_PATH}"
+  log "headless-daemon: dist=${DIST_DIR}"
+  log "headless-daemon: align=${RUNTIME_ALIGN}"
   cd "${EXT_DIR}"
   exec "${COPILOT_BIN}" "${BOOTSTRAP}"
 }

@@ -2,6 +2,8 @@
 // Copilot CLI Telegram Bridge Extension
 // ============================================================
 
+// 统一日志时间戳：必须**第一个** import —— 它的副作用要在其它模块顶层代码之前生效
+import "./lib/log-stamp.mjs";
 import { CopilotClient, RuntimeConnection } from "@github/copilot-sdk";
 // 命名空间导入只为取运行时导出的 SYSTEM_MESSAGE_SECTIONS，做 systemMessage 段名漂移自检
 // （SDK 对未知 section 的 remove 是 silent no-op，不主动查就永远发现不了）

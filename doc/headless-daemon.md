@@ -269,6 +269,26 @@ runtime/<ver>/pkg/          # CLI 的 JS 运行时本体（COPILOT_CLI_DIST_DIR 
 ~/.cli-proxy-api/          # :8317，独立 LaunchAgent
 ```
 
+### 8.1 日志策略（2026-09-13 起）
+
+* **每条带时间戳**：格式 `[MM-DD HH:MM:SS]`（本地时区）。
+  * 桥侧：`lib/log-stamp.mjs` 必须是 **extension.mjs 的第一个 import**（side-effect 模块），
+    这样其它模块的**顶层代码**也带前缀；launchd 只是把 stdout/stderr 落盘，桥侧不自己写文件。
+  * 脚本侧：`headless-daemon.sh` 的 `log()`（含 bootstrap 软化输出）。
+  * 例外：`[extension-fork]` / `[extension-bootstrap]` / `[extension-resolver]` 这 6 行由 SEA bootstrap 在
+    **加载 extension.mjs 之前**打出，没有前缀（属正常，不是漏）。
+* **按大小轮转**：`run_daemon` 启动时调 `rotate_log_if_needed` —— 默认**超过 8MB 就只保留最近约 2MB**
+  （丢首行避免半行），并写一条 `日志轮转（原 N 字节 → …）` 说明。
+  阈值可覆盖：`LOG_ROTATE_MAX_BYTES` / `LOG_ROTATE_KEEP_BYTES`；函数也可传参自测
+  `rotate_log_if_needed <file> <max> <keep>`。
+* **速查当前异常**（不用数行号了）：
+
+  ```bash
+  cd ~/.copilot/extensions/copilot-telegram-bridge
+  LAST=$(grep -n "run pid=" bots/Headless/daemon.log | tail -1 | cut -d: -f1)
+  awk -v n=$LAST 'NR>n' bots/Headless/daemon.log | grep -nE "401|heartbeat failed|is not a function|漂移|warn:"
+  ```
+
 **没有 Caches 依赖**：`~/Library/Caches/copilot/pkg` 已删除 —— CLI 不再自解包、不再读它（`COPILOT_CLI_DIST_DIR` + `COPILOT_AUTO_UPDATE=false`）。
 只有跑 `vendor-copilot-runtime.sh --from-cache`（离线备选）时才会去读本机 App 留下的缓存，那是**一次性取源**，不是运行时路径：
 
