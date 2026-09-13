@@ -73,8 +73,8 @@
     },
     "cursor-auto": {
       "label": "Cursor Auto",
-      "maxPromptTokens": 256000,
-      "maxContextWindowTokens": 256000,
+      "maxPromptTokens": 200000,
+      "maxContextWindowTokens": 200000,
       "maxOutputTokens": 32000
     },
     "cursor-grok-4.6-low": {
