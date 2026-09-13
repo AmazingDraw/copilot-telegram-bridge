@@ -25,7 +25,7 @@
 - 每 bot 独立目录：`bots/<Name>/`（lock / state / leader）
 - 开关：`bots.json` 各 bot 的 `disabled`（`true` 则跳过；热重载需重启 Headless 守护）
 - 角色：只认 `headless`。遗留 `role: editor` 启动时跳过。
-- 专文：[`headless-daemon.md`](doc/headless-daemon.md) · [`models-config.md`](doc/models-config.md) · [`system-prompts.md`](doc/system-prompts.md)
+- 专文：[`headless-daemon.md`](doc/headless-daemon.md) · [`models-config.md`](doc/models-config.md) · [`system-prompts.md`](doc/system-prompts.md) · [`sdk-upgrade.md`](doc/sdk-upgrade.md)
 
 ### 模块拆分
 
@@ -103,7 +103,7 @@ createBotInstance(name, token)
 
 ### Headless BYOK（CLI Proxy 默认上游）
 
-> 完整机制（CLI 缓存 / LaunchAgent / 排障 / MCP）：[`headless-daemon.md`](doc/headless-daemon.md)
+> 完整机制（runtime 版本钉死与换版 / LaunchAgent / 排障 / MCP）：[`headless-daemon.md`](doc/headless-daemon.md)
 
 **上游**：CLI Proxy（默认 `http://127.0.0.1:8317/v1`），密钥读 `~/.cli-proxy-api/config.yaml` 或 `CLIPROXY_API_KEY`。`baseUrl` 以运行中的 `config/models.json` / `CLIPROXY_BASE_URL` 为准。模型列表只看 `modelSets.headless`，会话 id 形如 `cliproxy/<id>`。
 
@@ -131,7 +131,7 @@ createBotInstance(name, token)
 
 **不依赖 GitHub Copilot 桌面 App。** 进程只靠 `runtime/` 里钉死的 CLI + bootstrap；第三方模型走 CLI Proxy 8317。
 
-换 CLI/SDK 版本：`bash scripts/vendor-copilot-runtime.sh`（npm 平台包，可跟版本号）再 restart。说明见 [`runtime/README.md`](runtime/README.md)。PATH 上的 npm/brew `copilot` 不够。
+换 CLI/SDK 版本：`bash scripts/vendor-copilot-runtime.sh [版本]`（CLI 二进制来自 npm，`pkg/` 正文由该二进制自解包取得）—— **两阶段**：先预览升级内容（上游 changelog + 6 个关键 API 面 diff），确认后才换，脚本自带「停守护 → 换 → 自动拉起 → 打 status」闭环，**不需要手动 restart**。规程 [`doc/sdk-upgrade.md`](doc/sdk-upgrade.md)，机制 [`runtime/README.md`](runtime/README.md)。PATH 上的 npm/brew `copilot` 不够。
 
 ```bash
 # 一次性安装（登录即启 + 崩溃自动拉起）
@@ -211,7 +211,7 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 
 全新机器 **不必先装 Copilot.app**。把本仓库放到上述目录（或软链过去），再：
 
-1. `bash scripts/vendor-copilot-runtime.sh`（npm 拉 CLI+pkg 进 `runtime/`）
+1. `bash scripts/vendor-copilot-runtime.sh`（npm 拉 CLI 二进制进 `runtime/`，`pkg/` 正文由它自解包取得；跑完自动起守护）
 2. `runtime/<ver>/cli/copilot login`（会创建 `~/.copilot/` 里的凭证；会话盘在 `~/.copilot/session-state/`）
 3. 起 CLI Proxy `:8317`，写 `config/bots.json`，`headless-daemon.sh install`
 
@@ -252,7 +252,7 @@ node --check extension.mjs
 node --check lib/*.mjs
 ```
 
-热更：`bash scripts/headless-daemon.sh restart`。换 CLI/SDK：`bash scripts/vendor-copilot-runtime.sh` 后再 restart。
+热更：`bash scripts/headless-daemon.sh restart`。换 CLI/SDK：`bash scripts/vendor-copilot-runtime.sh [版本]`（自带停/启守护，无需再手动 restart）。
 
 **同步方向**：本机扩展 → `sync-copilot-extensions.sh`（私有仓）→ `scripts/sync-to-open-source.sh`（开源镜像）。不要直接改开源目录。
 

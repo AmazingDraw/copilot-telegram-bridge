@@ -61,6 +61,26 @@
 
 专用 Bot 继续 `replace`，不要用这套裁剪。
 
+### 3.1 段名漂移是**静默**的（1.0.83 实测）+ 护栏
+
+SDK 对**未知 section** 的处理是：「content-bearing 覆盖会被追加到 additional instructions，
+而 **`remove` 是 silent no-op**」（`SystemMessageCustomizeConfig.sections` 官方注释）。
+⇒ 将来 SDK 给某段改名，我们的裁剪会**悄悄失效**（CLI 身份/语气渗回来跟人设打架），**不报任何错**。
+
+因此加了一道自检（`lib/byok-providers.mjs`）：
+
+* `EXPECTED_SDK_SECTIONS` = 本文 §3 这 12 段，作为基线快照
+* `extension.mjs` 把 SDK **运行时导出**的 `SYSTEM_MESSAGE_SECTIONS` 交给
+  `setKnownSystemMessageSections()`，与「本方裁剪的 6 段」双向交叉校验
+* 对齐 → 只报一次 `护栏 ok`；漂移 → **每次都响亮告警**，分别指出
+  「本方裁剪但 SDK 已无」（`remove` 会静默失效）与「SDK 新增未评估」（该不该裁）
+* 取不到该导出（老 SDK / 独立脚本无 SEA resolver）→ 护栏自动关闭并明说，**绝不因此崩桥**
+
+> **复核记录（2026-09-13，对照 vendored SDK `1.0.83`）**：12 段全部仍存在；6 条裁剪全部命中；
+> `SectionOverrideAction`（remove/replace/append/prepend/preserve）与 `SessionConfig.systemMessage`
+> （定义在 `SessionConfigBase`）形状未变；§4 注入时机表在代码里仍成立（`/model` 走 resume，裸 `switchTo` 仅无 session 兜底）；
+> 实测日志与本文一致。**结论：注入链路全部有效，无一条因升级失效。**
+
 ---
 
 ## 4. Bridge 注入时机
@@ -121,6 +141,20 @@
 ## 7. 日志
 
 ```text
+telegram-bridge: systemMessage 护栏已启用（SDK 目录 12 段，与本方裁剪交叉校验）
+telegram-bridge: systemMessage section 护栏 ok：SDK 12 段 / 本方裁剪 6 段全部命中
 telegram-bridge: systemMessage mode=customize sections=preamble:remove,tone:remove,guidelines:remove,custom_instructions:remove,last_instructions:remove,safety:replace agents=3240c
 telegram-bridge: [Headless] headless model rehydrate → cliproxy/xxx session=<uuid> agents=3240c
+```
+
+段名漂移时（升级后必看这几行）：
+
+```text
+telegram-bridge: ⚠️ systemMessage section 漂移 —— 本方裁剪但 SDK 已无: [guidelines]（remove 会**静默失效**，CLI 底模会渗进来）; SDK 新增未评估: [brand_new_section]（判断是否该裁）
+```
+
+权限姿态（§5 `permissionMode` 的落地证据，`setMode` 返回**权威** post-mutation mode）：
+
+```text
+telegram-bridge: [Headless] permissions.setMode(allow-all) ok success=true mode=allow-all
 ```

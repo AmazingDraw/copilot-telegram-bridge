@@ -2,17 +2,26 @@
 # 把成对的 Copilot CLI + pkg（SDK + extension bootstrap）钉进 runtime/。
 # 默认从 npm 平台包拉（不需要 Copilot.app）。二进制 gitignore；VERSION 进 Git。
 #
+# **两阶段**：先看升级内容 → 确认 → 才真的升级。
+#   ① 先跑 scripts/preflight-sdk-diff.sh：上游 changelog + 5 个关键 API 面 diff + bootstrap 门闩 pattern
+#   ② 关键面有变化时必须完整输入 yes 才继续；非交互环境（无 TTY）默认拒绝，除非显式 --yes
+#
 # 用法:
-#   bash scripts/vendor-copilot-runtime.sh              # 当前平台 latest
-#   bash scripts/vendor-copilot-runtime.sh 1.0.80       # 钉死版本
-#   bash scripts/vendor-copilot-runtime.sh --from-cache # 仅当本机还有 App 解包缓存
+#   bash scripts/vendor-copilot-runtime.sh                 # 当前平台 latest
+#   bash scripts/vendor-copilot-runtime.sh 1.0.90          # 钉死版本
+#   bash scripts/vendor-copilot-runtime.sh 1.0.90 --yes    # 无人值守（自行承担确认责任）
+#   bash scripts/vendor-copilot-runtime.sh --no-preflight  # 跳过预览（离线时）
+#   bash scripts/vendor-copilot-runtime.sh --from-cache    # 仅当本机还有 App 解包缓存（隐含不出网）
 set -euo pipefail
 
 EXT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CACHE_PKG_ROOT="${HOME}/Library/Caches/copilot/pkg"
 CLI_ROOT="${HOME}/Library/Caches/github-copilot-sdk/cli"
 RUNTIME_ROOT="${EXT_DIR}/runtime"
-NPM_REGISTRY="${NPM_REGISTRY:-https://registry.npmjs.org}"
+
+# 平台名 / npm 包名 / 版本解析的唯一真源
+# shellcheck source=/dev/null
+source "${EXT_DIR}/scripts/runtime-common.sh"
 
 usage() {
   sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'
@@ -23,43 +32,18 @@ pkg_complete() {
   [[ -n "${dir}" && -d "${dir}/copilot-sdk" && -f "${dir}/preloads/extension_bootstrap.mjs" ]]
 }
 
-# Copilot 自带 skill / 解包垃圾：无头不用，升版本也剥掉。
+# 现在整个 pkg 就是 CLI 的 JS 运行时（headless-daemon 用 COPILOT_CLI_DIST_DIR 钉住它），
+# 所以**不再剥** builtin/ builtin-skills/ assets/ changelog.json —— 运行期可能引用，
+# 剥掉会变成难查的静默失败（实测这四项合计仅 ~1.4MB，不值得省）。
+# 只清真正的垃圾：.DS_Store/._*/inuse 锁残留/旧软化备份。
+# 保留 `.extraction-complete`：让 vendored pkg 与 CLI 自己解包出来的结构完全一致。
 prune_vendored_pkg() {
   local pkg="$1"
-  rm -rf "${pkg}/builtin" "${pkg}/builtin-skills" "${pkg}/assets"
-  rm -f "${pkg}/changelog.json"
-  find "${pkg}" \( -name '.DS_Store' -o -name '._*' -o -name '.extraction-complete' -o -name 'inuse.*.lock' \) -delete 2>/dev/null || true
+  find "${pkg}" \( -name '.DS_Store' -o -name '._*' -o -name 'inuse.*.lock' \) -delete 2>/dev/null || true
   find "${pkg}/preloads" -name '*.bak-compat-*' -delete 2>/dev/null || true
-  echo "vendor-copilot-runtime: stripped builtin/ builtin-skills/ assets/ changelog + junk markers"
+  echo "vendor-copilot-runtime: cleaned junk (builtin/ assets/ changelog/.extraction-complete 保留：整个 pkg 就是运行时)"
 }
 
-detect_npm_plat() {
-  local os arch
-  os="$(uname -s | tr '[:upper:]' '[:lower:]')"
-  arch="$(uname -m)"
-  case "${arch}" in
-    arm64|aarch64) arch="arm64" ;;
-    x86_64|amd64) arch="x64" ;;
-    *)
-      echo "error: unsupported arch ${arch}" >&2
-      return 1
-      ;;
-  esac
-  case "${os}" in
-    darwin) echo "darwin-${arch}" ;;
-    linux)
-      if ldd /bin/sh 2>&1 | grep -qi musl; then
-        echo "linuxmusl-${arch}"
-      else
-        echo "linux-${arch}"
-      fi
-      ;;
-    *)
-      echo "error: unsupported OS ${os} (use a Mac/Linux host, or copy runtime/ by hand)" >&2
-      return 1
-      ;;
-  esac
-}
 
 # App 解包缓存：~/Library/Caches/copilot/pkg/<plat>/<ver>
 detect_cache_plat() {
@@ -76,12 +60,62 @@ detect_cache_plat() {
   echo "${plat}"
 }
 
+# 升级确认闸门：默认**必须**人工确认；非交互环境（无 TTY）一律拒绝，除非 --yes。
+# 关键面有变化（rc=1）或预览没做成（rc=3）时，要求完整输入 "yes"（把"顺手回车"挡掉）。
+ASSUME_YES=0
+confirm_upgrade() {
+  local ver="$1" rc="${2:-0}" need="y" note=""
+  if [[ "${ASSUME_YES}" -eq 1 ]]; then
+    echo "vendor-copilot-runtime: --yes 已给 → 跳过确认（→ ${ver}）"
+    return 0
+  fi
+  if [[ ! -t 0 ]]; then
+    echo "error: 非交互环境（stdin 不是 TTY）→ 不盲升。" >&2
+    echo "  先看预览：bash ${EXT_DIR}/scripts/preflight-sdk-diff.sh ${ver}" >&2
+    echo "  确认无误后：bash $0 ${ver} --yes" >&2
+    return 1
+  fi
+  if [[ "${rc}" -eq 1 ]]; then need="yes"; note="（⚠️ 检测到关键 API 面变化，需完整输入 yes）"; fi
+  if [[ "${rc}" -eq 3 ]]; then need="yes"; note="（⚠️ 预览没做成，风险未知，需完整输入 yes）"; fi
+  printf '\n确认升级到 %s ？%s\n  输入 %s 继续，其它=中止: ' "${ver}" "${note}" "${need}"
+  local ans=""
+  read -r ans || ans=""
+  if [[ "${ans}" == "${need}" ]]; then
+    return 0
+  fi
+  return 1
+}
+
+# 换运行时是「停 → 换 → 自动拉起」闭环：避免 rsync --delete 与运行中的进程抢文件，
+# 也省掉主人手动 restart。只有本来就在跑的守护才会被拉起，不擅自开新实例。
+DAEMON_WAS_RUNNING=0
+stop_daemon_for_swap() {
+  local daemon="${EXT_DIR}/scripts/headless-daemon.sh"
+  [[ -f "${daemon}" ]] || return 0
+  if launchctl print "gui/$(id -u)/com.copilot-telegram-bridge" >/dev/null 2>&1 \
+    || [[ -f "${EXT_DIR}/bots/Headless/daemon.pid" ]]; then
+    DAEMON_WAS_RUNNING=1
+    echo "vendor-copilot-runtime: stopping headless daemon before swapping runtime..."
+    bash "${daemon}" stop >/dev/null 2>&1 || true
+  fi
+}
+start_daemon_after_swap() {
+  local daemon="${EXT_DIR}/scripts/headless-daemon.sh"
+  if [[ "${DAEMON_WAS_RUNNING}" -ne 1 ]]; then
+    echo "vendor-copilot-runtime: 守护本来没在跑；需要时: bash ${daemon} start"
+    return 0
+  fi
+  echo "vendor-copilot-runtime: starting headless daemon (align → vendored:$(tr -d '[:space:]' <"${RUNTIME_ROOT}/VERSION"))"
+  bash "${daemon}" start || echo "vendor-copilot-runtime: warn: start 失败，手动跑 bash ${daemon} start" >&2
+  bash "${daemon}" status || true
+}
+
 install_from_extract() {
   local ver="$1" copilot_bin="$2" pkg_dir="$3"
   local dest="${RUNTIME_ROOT}/${ver}"
   echo "vendor-copilot-runtime: ${ver}"
   echo "  cli=${copilot_bin}"
-  echo "  pkg=${pkg_dir}"
+  echo "  pkg(校验用)=${pkg_dir}"
   echo "  dest=${dest}"
 
   if ! pkg_complete "${pkg_dir}"; then
@@ -94,80 +128,48 @@ install_from_extract() {
   fi
 
   mkdir -p "${dest}/cli" "${dest}/pkg"
+  # 换文件前先停守护（已下载完成，停机窗口只有几秒）
+  stop_daemon_for_swap
   rsync -a --delete "${copilot_bin}" "${dest}/cli/copilot"
   chmod +x "${dest}/cli/copilot"
-  rsync -a --delete \
-    --exclude '*.map' \
-    --exclude '/copilot' \
-    --exclude '/builtin/' \
-    --exclude '/builtin-skills/' \
-    "${pkg_dir}/" "${dest}/pkg/"
+
+  # pkg 内容取自 **CLI 二进制内嵌的 copilot.tgz**（它自己会在无 DIST_DIR 时解包的那份），
+  # 不用 npm 平台包里的 JS 外壳：两者只有 package.json 不同（@github/copilot vs
+  # @github/copilot-<plat>），而 app.js 会读 package.json —— 现在整个 pkg 就是运行时，
+  # 必须与 CLI 自解包的版本逐字节一致。
+  # 强制走解包分支：--no-auto-update 关掉「挑缓存里更新的版本」，COPILOT_PKG_CACHE_HOME 指到临时目录。
+  local selfhome src
+  selfhome="$(mktemp -d "${TMPDIR:-/tmp}/vendor-selfextract.XXXXXX")"
+  echo "  self-extract: ${selfhome}"
+  if ! COPILOT_PKG_CACHE_HOME="${selfhome}" COPILOT_AUTO_UPDATE=false \
+    "${dest}/cli/copilot" --no-auto-update --version >/dev/null 2>&1; then
+    echo "error: CLI 自解包失败（--version 退出非 0）" >&2
+    rm -rf "${selfhome}"
+    echo "  守护已停止；修好后: bash ${EXT_DIR}/scripts/headless-daemon.sh start" >&2
+    exit 1
+  fi
+  src="${selfhome}/pkg/$(detect_npm_plat)/${ver}"
+  if [[ ! -f "${src}/index.js" || ! -f "${src}/app.js" ]]; then
+    echo "error: CLI 自解包结果不完整: ${src}" >&2
+    rm -rf "${selfhome}"
+    echo "  守护已停止；修好后: bash ${EXT_DIR}/scripts/headless-daemon.sh start" >&2
+    exit 1
+  fi
+  rsync -a --delete "${src}/" "${dest}/pkg/"
+  rm -rf "${selfhome}"
   prune_vendored_pkg "${dest}/pkg"
 
   printf '%s\n' "${ver}" >"${RUNTIME_ROOT}/VERSION"
 
   local bootstrap="${dest}/pkg/preloads/extension_bootstrap.mjs"
-  python3 - "${bootstrap}" <<'PY'
-import pathlib, re, sys
-path = pathlib.Path(sys.argv[1])
-MARKER = "HEADLESS_BOOTSTRAP_COMPAT_V1"
-text = path.read_text(encoding="utf-8")
-if MARKER in text or "continuing without parent watch (headless-daemon compat)" in text:
-    print(f"vendor-copilot-runtime: bootstrap already patched: {path}")
-    raise SystemExit(0)
-pat = re.compile(
-    r"const parentPid = Number\(process\.env\.COPILOT_EXTENSION_PARENT_PID\);\n"
-    r"if \(!Number\.isSafeInteger\(parentPid\) \|\| parentPid <= 0 \|\| process\.ppid !== parentPid\) \{\n"
-    r"    process\.exit\(0\);\n"
-    r"\}\n"
-    r"const parentWatch = setInterval\(\(\) => \{\n"
-    r"    try \{\n"
-    r"        if \(process\.ppid !== parentPid\) \{\n"
-    r"            process\.exit\(0\);\n"
-    r"        \}\n"
-    r"        process\.kill\(parentPid, 0\);\n"
-    r"    \} catch \{\n"
-    r"        process\.exit\(0\);\n"
-    r"    \}\n"
-    r"\}, 1000\);\n"
-    r"parentWatch\.unref\(\);",
-    re.M,
-)
-m = pat.search(text)
-if not m:
-    if "COPILOT_EXTENSION_PARENT_PID" not in text:
-        print(f"vendor-copilot-runtime: no parent gate: {path}")
-        raise SystemExit(0)
-    print(f"vendor-copilot-runtime: bootstrap pattern miss: {path}", file=sys.stderr)
-    raise SystemExit(1)
-soft = f"""// {MARKER} — telegram-bridge vendored runtime
-const parentPid = Number(process.env.COPILOT_EXTENSION_PARENT_PID);
-if (Number.isSafeInteger(parentPid) && parentPid > 0) {{
-    if (process.ppid !== parentPid) {{
-        process.stderr.write(`[extension-bootstrap] parent pid mismatch env=${{parentPid}} ppid=${{process.ppid}}, exiting\\n`);
-        process.exit(0);
-    }}
-    const parentWatch = setInterval(() => {{
-        try {{
-            if (process.ppid !== parentPid) {{
-                process.exit(0);
-            }}
-            process.kill(parentPid, 0);
-        }} catch {{
-            process.exit(0);
-        }}
-    }}, 1000);
-    parentWatch.unref();
-}} else {{
-    process.stderr.write(`[extension-bootstrap] COPILOT_EXTENSION_PARENT_PID unset/invalid; continuing without parent watch (headless-daemon compat)\\n`);
-}}"""
-path.write_text(text[: m.start()] + soft + text[m.end() :], encoding="utf-8")
-print(f"vendor-copilot-runtime: patched bootstrap {path}")
-PY
+  # 父进程门闩软化：唯一真源 scripts/patch-bootstrap-compat.py（三处共用）。
+  # pattern 不命中 = 上游改了写法 → 直接让本脚本失败退出（宁可不升级，也不要静默崩循环）。
+  python3 "${EXT_DIR}/scripts/patch-bootstrap-compat.py" --prefix vendor-copilot-runtime "${bootstrap}"
 
   echo "vendor-copilot-runtime: done (gitignores binaries; VERSION=${ver})"
   ls -lh "${dest}/cli/copilot"
   du -sh "${dest}"
+  start_daemon_after_swap
 }
 
 vendor_from_cache() {
@@ -199,7 +201,7 @@ vendor_from_cache() {
 
 vendor_from_npm() {
   local want_ver="${1:-latest}"
-  local plat pkg_name meta_url tmp tgz
+  local plat pkg_name meta_url tgz
   plat="$(detect_npm_plat)"
   pkg_name="@github/copilot-${plat}"
   if [[ "${want_ver}" == "latest" ]]; then
@@ -209,8 +211,9 @@ vendor_from_npm() {
   fi
 
   echo "vendor-copilot-runtime: npm ${pkg_name}@${want_ver}"
+  # tmp 必须是脚本级变量：EXIT trap 在函数返回后才执行，local 会在 set -u 下报 unbound variable
   tmp="$(mktemp -d "${TMPDIR:-/tmp}/vendor-copilot.XXXXXX")"
-  trap 'rm -rf "${tmp}"' EXIT
+  trap 'rm -rf "${tmp:-}"' EXIT
 
   if ! curl -fsSL --retry 3 --retry-delay 2 "${meta_url}" >"${tmp}/meta.json"; then
     echo "error: npm metadata failed: ${meta_url}" >&2
@@ -263,6 +266,7 @@ PY
 }
 
 FROM_CACHE=0
+NO_PREFLIGHT=0
 VER_ARG=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -272,6 +276,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --from-cache)
       FROM_CACHE=1
+      shift
+      ;;
+    -y|--yes)
+      ASSUME_YES=1
+      shift
+      ;;
+    --no-preflight)
+      NO_PREFLIGHT=1
       shift
       ;;
     --)
@@ -294,7 +306,25 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ "${FROM_CACHE}" -eq 1 ]]; then
+  # 离线路径：不查 npm、不预览（本来就没网）
+  echo "vendor-copilot-runtime: --from-cache（离线）→ 跳过升级预览与关键面 diff"
+  confirm_upgrade "${VER_ARG:-<cache 里最新>}" 0 || { echo "已中止，未改动任何文件。"; exit 1; }
   vendor_from_cache "${VER_ARG}"
 else
-  vendor_from_npm "${VER_ARG:-latest}"
+  # 入口处把 latest 解析成确定版本：保证"预览的版本"就是"实际拉的版本"
+  TARGET_VER="$(resolve_npm_version "${VER_ARG:-latest}")" || exit 3
+  PRE_RC=0
+  if [[ "${NO_PREFLIGHT}" -eq 1 ]]; then
+    echo "vendor-copilot-runtime: --no-preflight → 跳过升级内容预览与关键面 diff"
+  else
+    set +e
+    bash "${EXT_DIR}/scripts/preflight-sdk-diff.sh" "${TARGET_VER}"
+    PRE_RC=$?
+    set -e
+    if [[ "${PRE_RC}" -eq 3 ]]; then
+      echo "vendor-copilot-runtime: warn: 预览没做成（网络 / unpkg 不可达）" >&2
+    fi
+  fi
+  confirm_upgrade "${TARGET_VER}" "${PRE_RC}" || { echo "已中止，未改动任何文件。"; exit 1; }
+  vendor_from_npm "${TARGET_VER}"
 fi

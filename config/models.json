@@ -1,12 +1,12 @@
 {
   "$comment": "Bridge 模型单一真源。模型规格只写入 catalog；Headless、回滚 provider 与单 Bot 策略通过 modelSets 引用。改完后运行 bash scripts/headless-daemon.sh restart。密钥不写这里，走 env / apiKeyFromFile / cliproxy yaml。覆盖路径：HEADLESS_MODELS_CONFIG。",
   "schemaVersion": 2,
-  "officialFallback": "cliproxy/deepseek-v4-flash",
+  "officialFallback": "cliproxy/gemini-flash",
   "defaults": {
     "maxContextWindowTokens": 200000,
     "claudeWaitTimeoutMs": 3600000,
     "claudeDefaultModel": "gemini-flash",
-    "claudeFallbackModel": "deepseek-v4-flash",
+    "claudeFallbackModel": "cursor-auto",
     "claudeDefaultEffort": "",
     "claudeModelSet": "claude-cli",
     "claudeModelPrefix": "",
@@ -15,9 +15,13 @@
     "claudeBare": true,
     "claudeStrictMcp": true
   },
+  "auth": {
+    "$comment": "GitHub 身份与官方模型。login=false = 不登录（byok-only）：启动时清掉身份 env 并让 SDK 传 --no-auto-login → runtime 无身份运行；BYOK/cliproxy 全链路不受影响（2026-09-13 隔离实测：start/createSession/BYOK 回合全通），官方模型面自动视为关闭。想用官方模型：login=true（同时把 display.officialModels.enabled 设回 true）。身份来源顺序：COPILOT_GITHUB_TOKEN → GH_TOKEN → GITHUB_TOKEN → gh CLI → keychain；注意 clientMode=empty 会让 SDK 注入 COPILOT_DISABLE_KEYTAR=1（关掉 keychain）→ 排查 401 优先查 env token。",
+    "login": false
+  },
   "display": {
     "officialModels": {
-      "enabled": true,
+      "enabled": false,
       "allowIds": [],
       "blockIds": [
         "auto"
@@ -114,30 +118,6 @@
       "maxPromptTokens": 1000000,
       "maxContextWindowTokens": 1000000,
       "maxOutputTokens": 32000
-    },
-    "cursor-grok-4.5-high": {
-      "label": "Cursor Grok 4.5 High",
-      "maxPromptTokens": 256000,
-      "maxContextWindowTokens": 256000,
-      "maxOutputTokens": 32000
-    },
-    "cursor-grok-4.5-medium": {
-      "label": "Cursor Grok 4.5 Medium",
-      "maxPromptTokens": 256000,
-      "maxContextWindowTokens": 256000,
-      "maxOutputTokens": 32000
-    },
-    "cursor-grok-4.5-low": {
-      "label": "Cursor Grok 4.5 Low",
-      "maxPromptTokens": 256000,
-      "maxContextWindowTokens": 256000,
-      "maxOutputTokens": 32000
-    },
-    "composer-2.5": {
-      "label": "Composer 2.5",
-      "maxPromptTokens": 200000,
-      "maxContextWindowTokens": 200000,
-      "maxOutputTokens": 32000
     }
   },
   "modelSets": {
@@ -146,8 +126,6 @@
       "defaultModel": "gemini-flash",
       "models": [
         "gemini-flash",
-        "deepseek-v4-flash",
-        "deepseek-v4-pro",
         "cursor-auto",
         "cursor-grok-4.6-high",
         "kimi-k3-high",
@@ -156,10 +134,8 @@
     },
     "headless": {
       "$comment": "Headless 主 Bot 的有序模型列表；顺序同时用于 /model 与默认选择。",
-      "defaultModel": "deepseek-v4-flash",
+      "defaultModel": "gemini-flash",
       "models": [
-        "deepseek-v4-flash",
-        "deepseek-v4-pro",
         "gemini-flash",
         "cursor-auto",
         "cursor-grok-4.6-low",

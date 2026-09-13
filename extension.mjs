@@ -3,10 +3,14 @@
 // ============================================================
 
 import { CopilotClient, RuntimeConnection } from "@github/copilot-sdk";
+// 命名空间导入只为取运行时导出的 SYSTEM_MESSAGE_SECTIONS，做 systemMessage 段名漂移自检
+// （SDK 对未知 section 的 remove 是 silent no-op，不主动查就永远发现不了）
+import * as COPILOT_SDK from "@github/copilot-sdk";
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, renameSync, readdirSync, statSync } from "node:fs";
 import { join, basename } from "node:path";
 import { randomBytes, createHash } from "node:crypto";
 import dns from "node:dns";
+import { homedir } from "node:os";
 
 import {
     CHUNK_MAX as MD_CHUNK_MAX,
@@ -23,8 +27,14 @@ import {
 } from "./lib/markdown-tg.mjs";
 import {
     loadShellEnvForByok,
+    officialModelsEnabled,
+    compactError,
+    githubLoginEnabled,
+    stripGithubIdentityEnv,
     loadAgentsMdInstructions,
     buildHeadlessSessionConfig,
+    resolveDisabledMcpServers,
+    setKnownSystemMessageSections,
     loadModelsConfig,
     isOfficialModelBlocked,
     pickStickySessionModel,
@@ -59,6 +69,9 @@ import {
     loadAgentsFromPath,
     loadBotCliproxyApiKey,
 } from "./lib/bot-profile.mjs";
+
+// 段名漂移自检：把 SDK 的 section 目录交给 byok-providers 交叉校验本方裁剪（详见那里注释）
+setKnownSystemMessageSections(COPILOT_SDK.SYSTEM_MESSAGE_SECTIONS);
 
 dns.setDefaultResultOrder("ipv4first");
 
@@ -1053,6 +1066,7 @@ const {
     createUserInputHandler,
     createExitPlanModeHandler,
     enableHeadlessAllowAll,
+    logSessionSkills,
 } = attachHandlers(ctx);
 
 const {
@@ -1470,20 +1484,62 @@ async function registerSlashCommand(sess) {
                                 process.env.COPILOT_CLI_PATH ||
                                 process.env.COPILOT_CLI_BINARY ||
                                 process.argv[0];
+                            // ② 进程级堵法：把"本 bot 不要的 MCP"直接做成 runtime 子进程参数 ——
+                            //    进程根本没机会起（比会话级更早）。SDK 里 args 是**前置追加**
+                            //    `[...extraArgs, "--headless", "--no-auto-update", "--stdio"]`，不会顶掉必需参数。
+                            //    名单与①会话级 disabledMcpServers 共用 resolveDisabledMcpServers（单一真源）。
+                            const runtimeDisabledMcp = resolveDisabledMcpServers({
+                                loadMcp: botProfile?.loadMcp !== false,
+                                explicit: botProfile?.disabledMcpServers || [],
+                            });
+                            const runtimeArgs = runtimeDisabledMcp.flatMap((s) => ["--disable-mcp-server", s]);
                             client = new CopilotClient({
+                                // 官方 client 模式：empty = 可选特性默认全关 + 工具过滤 deny-wins
+                                // （SDK 明示：多用户服务应当用它；默认 copilot-cli 带 CLI 式 ambient 能力）
+                                mode: botProfile?.clientMode || "copilot-cli",
+                                // auth.login=false ⇒ useLoggedInUser:false ⇒ SDK 给 runtime 传 --no-auto-login
+                                //（CLI 原话：Disable automatic login detection (stored OAuth tokens and gh CLI)）
+                                useLoggedInUser: githubLoginEnabled(),
+                                // empty 模式的硬要求之一：持久化根（SDK 校验不过会 throw）。
+                                // 该值被下传为 COPILOT_HOME —— 传当前同一取值 ⇒ sticky 会话位置不变。
+                                baseDirectory: join(homedir(), ".copilot"),
                                 connection: RuntimeConnection.forStdio({
                                     path: copilotCliPath,
+                                    ...(runtimeArgs.length ? { args: runtimeArgs } : {}),
                                 })
                             });
+                            console.error(
+                                `telegram-bridge: [${name}] client mode=${botProfile?.clientMode || "copilot-cli"}`
+                            );
+                            console.error(
+                                `telegram-bridge: [${name}] runtime MCP args=` +
+                                (runtimeArgs.length ? runtimeArgs.join(" ") : "(none)")
+                            );
                             headlessClient = client;
                             console.error(`telegram-bridge: [${name}] connecting to client...`);
                             await client.start();
                             console.error(`telegram-bridge: [${name}] client connected. Listing models...`);
-                            let officialModels = [];
+                            // 身份自证：直接问 SDK「当前有没有 GitHub 身份」——"不登录"是否真的生效，一眼可见
                             try {
-                                officialModels = await client.listModels();
-                            } catch (listErr) {
-                                console.error(`telegram-bridge: [${name}] listModels failed:`, listErr.message);
+                                const auth = await client.getAuthStatus();
+                                console.error(
+                                    `telegram-bridge: [${name}] auth: isAuthenticated=${auth?.isAuthenticated}` +
+                                    (auth?.authType ? ` type=${auth.authType}` : "") +
+                                    (auth?.statusMessage ? ` (${auth.statusMessage})` : "")
+                                );
+                            } catch (authErr) {
+                                console.error(`telegram-bridge: [${name}] getAuthStatus failed: ${compactError(authErr)}`);
+                            }
+                            let officialModels = [];
+                            if (!officialModelsEnabled()) {
+                                // B2) 官方模型面已关（display.officialModels.enabled=false）⇒ 不查云端，401 与巨型日志一并消失
+                                console.error(`telegram-bridge: [${name}] 官方模型面已关闭 → 跳过 listModels`);
+                            } else {
+                                try {
+                                    officialModels = await client.listModels();
+                                } catch (listErr) {
+                                    console.error(`telegram-bridge: [${name}] listModels 失败（已继续，BYOK 不受影响）：${compactError(listErr)}`);
+                                }
                             }
 
                             const customInstructions = loadAgentsFromPath(botProfile.agentsMd, () => loadAgentsMdInstructions()); if (customInstructions) { console.error(`telegram-bridge: [${name}] loaded AGENTS.md instructions (${customInstructions.length} chars${botProfile.agentsMd ? `, profile=${botProfile.profile || "custom"}` : ", global"})`); }
@@ -1509,6 +1565,9 @@ async function registerSlashCommand(sess) {
                                 forceDefaultModel: singleLock,
                                 loadMcp: botProfile.loadMcp !== false,
                                 loadSkills: botProfile.loadSkills !== false,
+                                disabledMcpServers: botProfile.disabledMcpServers || [],
+                                clientMode: botProfile.clientMode || "copilot-cli",
+                                availableTools: botProfile.availableTools || null,
                                 systemMessageMode: botProfile.systemMessageMode || "customize",
                                 mcpServerNames: botProfile.mcpServerNames || null,
                                 skillNames: botProfile.skillNames || null,
@@ -1621,13 +1680,24 @@ async function registerSlashCommand(sess) {
                                 }
                             }
 
-                            // 诊断：列出会话内可见模型（含 BYOK）
-                            try {
+                            // 诊断：会话模型面。官方模型面关闭时，云端 model.list() 必然 401（就是我们屏蔽掉的那条路），
+                            // 改用**本地** getCurrent() 拿当前模型 —— 保可观测性、零云端调用、日志无噪音。
+                            if (!officialModelsEnabled()) {
+                                try {
+                                    const cur = await session.rpc.model.getCurrent();
+                                    console.error(
+                                        `telegram-bridge: [${name}] session model current: ${cur?.modelId || "?"}` +
+                                        `（官方模型面已关闭，跳过云端 model.list）`
+                                    );
+                                } catch (curErr) {
+                                    console.error(`telegram-bridge: [${name}] model.getCurrent failed：${compactError(curErr)}`);
+                                }
+                            } else try {
                                 const listed = await session.rpc.model.list();
                                 const ids = (listed?.list || []).map((m) => m.id).slice(0, 20);
                                 console.error(`telegram-bridge: [${name}] session models sample: ${ids.join(", ")}`);
                             } catch (listErr) {
-                                console.error(`telegram-bridge: [${name}] session.model.list failed:`, listErr.message);
+                                console.error(`telegram-bridge: [${name}] session.model.list failed（已继续）：${compactError(listErr)}`);
                             }
                             
                             mkdirSync(botDir(name), { recursive: true });
@@ -1640,6 +1710,12 @@ async function registerSlashCommand(sess) {
                             setupEventHandlers(session);
                             // 无头：对齐桌面「Run tools without asking」
                             await enableHeadlessAllowAll(session);
+                            if (typeof logSessionSkills === "function") {
+                                await logSessionSkills(session);
+                            } else {
+                                // 不静默：接线漏了要看得见（今天已经栽过两次"静默 no-op"）
+                                console.error("telegram-bridge: warn: logSessionSkills 未接线，技能面自证缺失");
+                            }
 
                             // BYOK：单模型锁或新建会话才强制切；resume 保留会话里已选模型。
                             // 官方 auto 无论何时一律踢走。
@@ -1815,6 +1891,11 @@ const BRIDGE_MODE = String(process.env.TELEGRAM_BRIDGE_MODE || "headless-only").
 
 async function main() {
     loadShellEnvForByok();
+    // 「不登录」模式（config/models.json → auth.login=false）：
+    // 必须在 loadShellEnvForByok() **之后**清，否则 shell rc 里的 token 会被重新灌回来。
+    if (!githubLoginEnabled()) {
+        stripGithubIdentityEnv();
+    }
     registry = loadJsonOrDefault(BOTS_REGISTRY_PATH, {});
     access = loadJsonOrDefault(ACCESS_PATH, { allowedUsers: [], pending: {} });
     cleanupTmpDir();

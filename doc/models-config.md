@@ -33,6 +33,34 @@ config/models.json
 
 无头会话不读 `~/.copilot/data.db`；窗口只走 catalog → SDK。
 
+## 1.1 `auth`：GitHub 身份与官方模型（2026-09-13 新增）
+
+```json
+"auth": { "login": false }
+```
+
+| 取值 | 行为 |
+| :--- | :--- |
+| **`login: false`（当前）** | **不登录**（byok-only）：启动时清掉身份 env（`COPILOT_GITHUB_TOKEN`/`GH_TOKEN`/`GITHUB_TOKEN`/`COPILOT_API_KEY`），并让 SDK 给 runtime 传 **`--no-auto-login`**（CLI 原话：*Disable automatic login detection (stored OAuth tokens and gh CLI)*）。runtime 以**无身份**运行，官方模型面自动视为关闭。 |
+| `login: true` | 保留 GitHub 身份（官方模型可用）；此时官方模型面另由 `display.officialModels.enabled` 控制 |
+
+**实测（2026-09-13 隔离 + 生产）**：无身份时 `start` / `createSession` / **BYOK 回合**全通，
+只有官方模型面不可用（`listModels` → `Not authenticated`）—— 而它已被自动跳过。
+⇒ **日常使用（cliproxy/BYOK）不依赖 GitHub 身份**；凭证留着更稳、删掉也能跑。
+
+**排查 401 的先验知识**（身份来源与顺序）：
+`COPILOT_GITHUB_TOKEN` → `GH_TOKEN` → `GITHUB_TOKEN` → **`gh` CLI** → **keychain**；
+且 `clientMode: "empty"` 会让 SDK 给 runtime 注入 **`COPILOT_DISABLE_KEYTAR=1`**（关掉 keychain）
+⇒ 遇到 401 **优先查 env token**；CLI 只认 fine-grained PAT（需 `Copilot Requests`）/ OAuth，**不认经典 `ghp_`**。
+
+**自证**：每次连接会打一行身份实况，改完必须看它 ——
+```text
+telegram-bridge: GitHub 登录已关闭（auth.login=false）→ 清除身份 env: COPILOT_API_KEY；runtime 将以无身份启动（SDK 传 --no-auto-login）
+telegram-bridge: [Headless] auth: isAuthenticated=false (Not authenticated)
+```
+
+---
+
 ## 2. Catalog 字段
 
 ```json

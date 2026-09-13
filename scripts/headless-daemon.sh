@@ -33,6 +33,7 @@ resolve_runtime() {
     echo "error: ${RUNTIME_ROOT}/VERSION missing. Run: bash ${EXT_DIR}/scripts/vendor-copilot-runtime.sh" >&2
     COPILOT_BIN=""
     PKG_DIR=""
+    DIST_DIR=""
     SDK_PATH=""
     BOOTSTRAP=""
     RUNTIME_FP=""
@@ -43,89 +44,21 @@ resolve_runtime() {
   COPILOT_BIN="${RUNTIME_ROOT}/${ver}/cli/copilot"
   SDK_PATH="${PKG_DIR}/copilot-sdk"
   BOOTSTRAP="${PKG_DIR}/preloads/extension_bootstrap.mjs"
+  # CLI 的 JS 运行时目录（见 run_daemon 里 COPILOT_CLI_DIST_DIR 的说明）
+  DIST_DIR="${PKG_DIR}"
   RUNTIME_ALIGN="vendored:${ver}"
   RUNTIME_FP="${COPILOT_BIN}|${SDK_PATH}"
 }
 
 # Copilot ≥1.0.79 bootstrap：无 COPILOT_EXTENSION_PARENT_PID 时 silent exit(0)。
 # 无头以 `copilot <bootstrap.mjs>` 启动时常不带该 env → launchd 崩循环。
-# 幂等软化：有合法 parent 仍守护；未设置则继续跑。同时处理「CLI 偏好的 latest localBootstrap」。
+# 幂等软化：有合法 parent 仍守护；未设置则继续跑。软化逻辑在 scripts/patch-bootstrap-compat.py。
 ensure_bootstrap_compat() {
-  local targets=()
-  [[ -n "${BOOTSTRAP:-}" && -f "${BOOTSTRAP}" ]] && targets+=("${BOOTSTRAP}")
-
-  # 去重（aligned 与 latest 可能相同）
-  local path seen=""
-  for path in "${targets[@]}"; do
-    case " ${seen} " in
-      *" ${path} "*) continue ;;
-    esac
-    seen="${seen} ${path}"
-    BOOTSTRAP_COMPAT_TARGET="${path}" python3 >>"${LOG_FILE}" 2>&1 <<'PY' || true
-import os, pathlib, re, shutil, sys, time
-
-path = pathlib.Path(os.environ["BOOTSTRAP_COMPAT_TARGET"])
-MARKER = "HEADLESS_BOOTSTRAP_COMPAT_V1"
-text = path.read_text(encoding="utf-8")
-if MARKER in text or "continuing without parent watch (headless-daemon compat)" in text:
-    print(f"headless-daemon: bootstrap compat already applied: {path}")
-    raise SystemExit(0)
-
-pat = re.compile(
-    r"const parentPid = Number\(process\.env\.COPILOT_EXTENSION_PARENT_PID\);\n"
-    r"if \(!Number\.isSafeInteger\(parentPid\) \|\| parentPid <= 0 \|\| process\.ppid !== parentPid\) \{\n"
-    r"    process\.exit\(0\);\n"
-    r"\}\n"
-    r"const parentWatch = setInterval\(\(\) => \{\n"
-    r"    try \{\n"
-    r"        if \(process\.ppid !== parentPid\) \{\n"
-    r"            process\.exit\(0\);\n"
-    r"        \}\n"
-    r"        process\.kill\(parentPid, 0\);\n"
-    r"    \} catch \{\n"
-    r"        process\.exit\(0\);\n"
-    r"    \}\n"
-    r"\}, 1000\);\n"
-    r"parentWatch\.unref\(\);",
-    re.M,
-)
-m = pat.search(text)
-if not m:
-    if "COPILOT_EXTENSION_PARENT_PID" not in text:
-        print(f"headless-daemon: bootstrap compat skip (no parent gate): {path}")
-        raise SystemExit(0)
-    print(f"headless-daemon: bootstrap compat pattern miss: {path}", file=sys.stderr)
-    raise SystemExit(1)
-
-soft = f"""// {MARKER} — telegram-bridge headless-daemon
-// Soften parent-pid gate: unset PARENT_PID used to silent-exit(0) and crash-loop launchd.
-const parentPid = Number(process.env.COPILOT_EXTENSION_PARENT_PID);
-if (Number.isSafeInteger(parentPid) && parentPid > 0) {{
-    if (process.ppid !== parentPid) {{
-        process.stderr.write(`[extension-bootstrap] parent pid mismatch env=${{parentPid}} ppid=${{process.ppid}}, exiting\\n`);
-        process.exit(0);
-    }}
-    const parentWatch = setInterval(() => {{
-        try {{
-            if (process.ppid !== parentPid) {{
-                process.exit(0);
-            }}
-            process.kill(parentPid, 0);
-        }} catch {{
-            process.exit(0);
-        }}
-    }}, 1000);
-    parentWatch.unref();
-}} else {{
-    process.stderr.write(`[extension-bootstrap] COPILOT_EXTENSION_PARENT_PID unset/invalid; continuing without parent watch (headless-daemon compat)\\n`);
-}}"""
-
-bak = path.with_suffix(path.suffix + f".bak-compat-{time.strftime('%Y%m%d%H%M%S')}")
-shutil.copy2(path, bak)
-path.write_text(text[: m.start()] + soft + text[m.end() :], encoding="utf-8")
-print(f"headless-daemon: bootstrap compat applied: {path} (backup {bak.name})")
-PY
-  done
+  # 软化逻辑的唯一真源：scripts/patch-bootstrap-compat.py（daemon / vendor / preflight 三处共用）。
+  # 不要再在别处抄门闩正则 —— 否则「升级前检查器」和「实际行为」会各说一套。
+  [[ -n "${BOOTSTRAP:-}" && -f "${BOOTSTRAP}" ]] || return 0
+  python3 "${EXT_DIR}/scripts/patch-bootstrap-compat.py" --prefix headless-daemon "${BOOTSTRAP}" \
+    >>"${LOG_FILE}" 2>&1 || true
 }
 
 require_runtime() {
@@ -140,6 +73,27 @@ require_runtime() {
   if [[ -z "${SDK_PATH}" || ! -d "${SDK_PATH}" ]]; then
     echo "error: copilot-sdk not found at ${SDK_PATH:-none}" >&2
     exit 1
+  fi
+  # CLI 的 JS 运行时 = 整个 vendored pkg（见 run_daemon 里 COPILOT_CLI_DIST_DIR）。
+  # 缺文件 / 门闩未软化 → 启动即静默 exit(0) 崩循环，所以启动前硬校验，宁可响亮报错。
+  local missing=""
+  local f
+  for f in index.js app.js; do
+    [[ -f "${PKG_DIR}/${f}" ]] || missing="${missing} ${f}"
+  done
+  if [[ -n "${missing}" ]]; then
+    echo "error: vendored pkg incomplete (${PKG_DIR}) missing:${missing}" >&2
+    echo "  → 重新 vendor: bash ${EXT_DIR}/scripts/vendor-copilot-runtime.sh" >&2
+    exit 1
+  fi
+  if ! grep -q "HEADLESS_BOOTSTRAP_COMPAT_V1" "${BOOTSTRAP}" 2>/dev/null; then
+    echo "error: bootstrap parent-pid compat missing: ${BOOTSTRAP}" >&2
+    echo "  → 无头环境下会静默 exit(0) 崩循环；重跑 vendor-copilot-runtime.sh（它自带软化）" >&2
+    exit 1
+  fi
+  # 探针：共享缓存 pkg 若又出现，说明 CLI 没走 DIST_DIR（或别的进程重建了它）
+  if [[ -d "${HOME}/Library/Caches/copilot/pkg" ]]; then
+    echo "headless-daemon: warn: ${HOME}/Library/Caches/copilot/pkg 存在（DIST_DIR 可能未生效 / 有别的进程在用）" >>"${LOG_FILE}"
   fi
 }
 
@@ -189,6 +143,7 @@ cmd_status() {
     echo "headless-daemon: running pid=${pid}"
     echo "  bin=${COPILOT_BIN}"
     echo "  sdk=${SDK_PATH}"
+    echo "  dist=${DIST_DIR:-none}"
     echo "  align=${RUNTIME_ALIGN:-unknown}"
     echo "  log=${LOG_FILE}"
     echo "  launchd=${launchd_state} label=${LAUNCH_LABEL}"
@@ -218,6 +173,7 @@ cmd_status() {
     echo "headless-daemon: running pid=${lpid} (via launchd)"
     echo "  bin=${COPILOT_BIN}"
     echo "  sdk=${SDK_PATH}"
+    echo "  dist=${DIST_DIR:-none}"
     echo "  align=${RUNTIME_ALIGN:-unknown}"
     echo "  log=${LOG_FILE}"
     echo "  launchd=${launchd_state} label=${LAUNCH_LABEL}"
@@ -284,6 +240,17 @@ run_daemon() {
   export COPILOT_SDK_PATH="${SDK_PATH}"
   export SESSION_ID="${SESSION_ID:-headless-daemon}"
   export COPILOT_CLI_PATH="${COPILOT_BIN}"
+  # CLI 的 JS 运行时钉死在 vendored pkg，一个字节都不读 ~/Library/Caches。
+  # 层1 launcher（SEA）认该 env：直接 import <DIST_DIR>/index.js 并跳过「自解包到缓存」分支。
+  # 层2 index.js 的 resolveBootstrapPath(argv, __dir) 会把 __dir 认成 DIST_DIR，
+  # 于是生效的 bootstrap = <DIST_DIR>/preloads/extension_bootstrap.mjs（就是刚软化那份）；
+  # 它优先于 argv 传入的路径，之前正是它指向 Caches 才导致 1.0.83 崩循环。
+  # ⚠️ 绝不能给它加 --prefer-version（那个 flag 会让 DIST_DIR 直接被忽略）。
+  export COPILOT_CLI_DIST_DIR="${DIST_DIR}"
+  # 关掉 CLI 的自动下载/自动换版本（= --no-auto-update，官方写法）：
+  # 否则它会在 ~/Library/Caches/copilot/pkg 里偷偷解包新版本，既重建缓存、
+  # 又可能让层1 的 fh() 挑中新版本 JS，与钉死的 CLI 二进制错位。
+  export COPILOT_AUTO_UPDATE=false
   # LaunchAgent/login shell 会带 HOME；勿写死本机用户名
   if [[ -z "${HOME:-}" ]]; then
     HOME="$(cd ~ && pwd)"
@@ -292,6 +259,7 @@ run_daemon() {
 
   echo "headless-daemon: run pid=$$ bin=${COPILOT_BIN}" >>"${LOG_FILE}"
   echo "headless-daemon: sdk=${SDK_PATH}" >>"${LOG_FILE}"
+  echo "headless-daemon: dist=${DIST_DIR}" >>"${LOG_FILE}"
   echo "headless-daemon: align=${RUNTIME_ALIGN}" >>"${LOG_FILE}"
   cd "${EXT_DIR}"
   exec "${COPILOT_BIN}" "${BOOTSTRAP}"

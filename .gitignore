@@ -17,3 +17,7 @@ config/bots.json
 config/secrets.json
 members.json
 crypto-orders.json
+
+# 私密人设/玩法（不进仓）
+memory/淫诗*.md
+memory/*规则.md
