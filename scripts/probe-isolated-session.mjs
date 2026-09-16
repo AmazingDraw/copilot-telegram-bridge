@@ -12,6 +12,10 @@
  *   node scripts/probe-isolated-session.mjs --send          # 连 BYOK 回合一起测
  *   node scripts/probe-isolated-session.mjs --no-auth --send
  *        真·无身份：清掉身份 env + PATH 去掉 gh（SDK 应报 isAuthenticated:false；BYOK 仍应能跑）
+ *   node scripts/probe-isolated-session.mjs --provider cliproxy-nas --send
+ *        只装配指定上游（modelSets.*.provider 的绑定值），验证"换机"后那条链路能不能建会话、出话
+ *   node scripts/probe-isolated-session.mjs --provider cliproxy-nas --model cursor-auto --send
+ *        再钉死具体模型（反推 Bot 的实配：cursor-auto 走 本机）
  *
  * 隔离手段：临时 `COPILOT_HOME`（会话状态与凭证都不落生产目录）+ 独立 spawn 一个 CLI 子进程。
  * 退出码：0 = start 与 createSession 成功（且 send 未被要求或成功）；1 = 有失败项。
@@ -33,6 +37,14 @@ const PKG = join(BRIDGE, `runtime/${VER}/pkg`);
 const argv = process.argv.slice(2);
 const NO_AUTH = argv.includes("--no-auth");
 const DO_SEND = argv.includes("--send");
+const PROVIDER = (() => {
+    const i = argv.indexOf("--provider");
+    return i >= 0 ? String(argv[i + 1] || "").trim() : "";
+})();
+const MODEL = (() => {
+    const i = argv.indexOf("--model");
+    return i >= 0 ? String(argv[i + 1] || "").trim() : "";
+})();
 if (argv.includes("-h") || argv.includes("--help")) {
     console.log(readFileSync(fileURLToPath(import.meta.url), "utf8").split("*/")[0].replace(/^\/\*\*?/, "").trim());
     process.exit(0);
@@ -62,6 +74,8 @@ const client = new CopilotClient({
 });
 
 const out = { mode: NO_AUTH ? "no-auth" : "with-auth" };
+if (PROVIDER) out.provider = PROVIDER;
+if (MODEL) out.model = MODEL;
 let ok = true;
 // hard=true 才算硬指标；auth / listModels 只作信息 —— 无身份时 listModels 必然失败，那是**预期**不是错误
 const step = (name, fn, hard = false) => fn().then(
@@ -84,6 +98,8 @@ await step("createSession", async () => {
         clientMode: "empty",
         availableTools: [],
         systemMessageMode: "replace",
+        providerId: PROVIDER || null,   // 只装配这一台上游（绑定值）；空 = 全局装配
+        ...(MODEL ? { defaultModel: MODEL, allowedModels: [MODEL], forceDefaultModel: true } : {}),
     });
     session = await client.createSession(config);
     return `ok (${session?.sessionId || "?"})`;

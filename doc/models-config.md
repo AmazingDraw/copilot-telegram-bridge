@@ -115,6 +115,22 @@ catalog.<id>.maxOutputTokens        → SDK maxOutputTokens
 
 同一个模型可以属于多个组，但规格只在 `catalog` 写一次。
 
+### 3.1 `provider`：把一组模型钉到指定上游（2026-09-16 新增）
+
+```json
+"single-purpose": {
+  "provider": "cliproxy-nas",
+  "defaultModel": "<model-id>",
+  "models": ["<model-id>"]
+}
+```
+
+用途：**同一个模型由多台上游提供、按 Bot 选边**。例：某台专用 Bot 的 `cursor-auto` 走 `cliproxy-nas`，其余 Bot 走 Mac `cliproxy`，模型名不变（会话 id 为 `<provider>/<model>`，菜单里仍显示 `cursor-auto`）。
+
+- 语义：`provider` 有几个词就选哪台上游 ⇒ **切换＝改这一个词 + `headless-daemon.sh restart`**（`modelSets.<组>.provider` 与 `providers[].modelSet` 是两回事：前者选上游，后者定义该 upstream 服务哪些模型）。
+- 只能填 `providers[].id`；写成别的名字、或指向 `enabled: false` 的 provider、或该 provider 不服务本组模型 ⇒ **加载即抛错**（`models.json invalid`），不会静默换边。
+- 未声明 `provider` 的组：由全部非 `bindOnly` provider 装配（历史行为不变）。
+
 ## 4. Providers
 
 ```json
@@ -130,6 +146,25 @@ catalog.<id>.maxOutputTokens        → SDK maxOutputTokens
 ```
 
 provider 不再包含 `models[]` 对象。回滚时只切换 provider 的 `enabled`；同一时刻建议只启用一个第三方 provider。cliproxy 的 `baseUrl` 是 **值班指针**（Mac `127.0.0.1:8317` 或 `127.0.0.1:8317`），可随时切，以运行中的 json / `CLIPROXY_BASE_URL` 为准，不要把文档示例当成永久默认。见 cli-proxy-api skill `references/mac-vs-nas-urls.md`。
+
+### 4.1 `bindOnly`：专属上游（2026-09-16 新增）
+
+```json
+{
+  "id": "cliproxy-nas",
+  "enabled": true,
+  "bindOnly": true,
+  "type": "openai",
+  "baseUrl": "http://127.0.0.1:8317/v1",
+  "apiKeyFromFile": "${HOME}/.cli-proxy-api/single-purpose.api-key",
+  "modelSet": "single-purpose"
+}
+```
+
+- `bindOnly: true` ⇒ **不参与未绑定 Bot 的全局模型面**，只被 `modelSets.<组>.provider` 指到它的 Bot 装配。
+- 为什么需要它：模型选中逻辑是 `models.find(裸 id)`，**两台 provider 同时提供 `cursor-auto` 会按数组顺序生效**（隐式）。`bindOnly` + 绑定把"走哪台"变成显式配置。
+- 契约：`check-model-config.mjs` 断言「全局装配不得出现同裸 id 双来源」与「`bindOnly` provider 必须被某组 `modelSet` 绑定」；`bindOnly` 被摘掉会立刻报错。
+- **不要改 `cliproxy` 这个 id**：`/claude` 的上游是 `providers.find(p => p.id === "cliproxy").baseUrl`（硬编码）。
 
 密钥解析优先级：
 
@@ -171,6 +206,30 @@ bash scripts/headless-daemon.sh restart
 - Headless：改 `catalog.<id>.max*Tokens`，重启 daemon。
 - 旧会话通常缓存了窗口，需 `/new` 再开 session。
 
+### 5.5 切换某个 Bot 的上游（Mac ↔ NAS，2026-09-16）
+
+改 `modelSets.<该 Bot 的组>.provider` 一个词，然后重启 daemon（模型名不变）：
+
+```bash
+# 把 <组名> 那台上游切到 本机（默认）或 Mac 本机
+python3 - <<'PY'
+import json,pathlib; p=pathlib.Path("config/models.json"); d=json.loads(p.read_text())
+d["modelSets"]["single-purpose"]["provider"]="cliproxy-nas"   # 或 "cliproxy"；single-purpose 换成你的组名
+p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+"\n")
+PY
+bash scripts/headless-daemon.sh restart
+
+# 自证（daemon.log）：
+#   cliproxy-nas /models ok count=<n>
+#   headless BYOK config ... model=cliproxy-nas/<model> providers=cliproxy-nas ... bound=cliproxy-nas
+#   [<Bot>] session model current: cliproxy-nas/<model>
+```
+
+- 只影响该组对应的 Bot；`bindOnly` 上游不会漏进其他 Bot 的模型面。
+- **不自动回落**：指定的那台上游不可达时该 Bot 直接失败并报错，不会偷偷换机。
+- 想双向验通：`node scripts/probe-isolated-session.mjs --provider <id> --model <id> --send`
+  （⚠️ 从 GUI App 里跑时先看 §6 末尾「GUI App 里探 NAS 上游」）。
+
 ## 6. 校验与排障
 
 ```bash
@@ -202,6 +261,14 @@ headless BYOK config ... providers=<provider> models=<provider>/<id>,...
 | `defaultModel ... is not in the set` | 默认模型不属于该组 |
 | `cannot define both modelSet and models` | provider 同时使用新旧两套声明 |
 | `allowlist ∩ /models empty` | 配置 ID 与 live 上游目录不匹配 |
+| `modelSets.<组>.provider '...' is not a configured provider` | `provider` 写错名字（必须等于某个 `providers[].id`） |
+| `modelSets.<组>.provider '...' is disabled` | 绑到了一台 `enabled: false` 的上游 |
+| `modelSets.<组>.provider '...' does not serve: <id>` | 那台上游的 `modelSet` 里没有本组要的模型 |
+| `bot bound to unknown/disabled provider '...'` | 会话装配时绑定值失效（配置文件被改过） |
+| `duplicate model id across global providers` | 摘掉了 `bindOnly` ⇒ 同裸 id 双来源，选中会按数组顺序（检查器拦下） |
+| `bindOnly provider ... is not bound by any modelSet` | 有台专属上游没人用（死配置） |
+| `<provider> /models probe failed: fetch failed (…)` | 探活失败；括号里是 undici 的真实原因（ECONNREFUSED/超时）。**非致命**：会退回本地 allowlist，实际请求时才暴露上游不可达 |
+| `<provider> ... served none of the allowed models` | 绑定生效但一个模型都没装配出来 ⇒ 直接抛错（不掉回官方模型面） |
 
 | 现象 | 检查 |
 | :--- | :--- |
@@ -211,6 +278,16 @@ headless BYOK config ... providers=<provider> models=<provider>/<id>,...
 | `/claude` 列表不对 | `modelSets.claude-cli` 与 `defaults.claudeDefaultModel` |
 
 上游 `/v1/models` 只负责验证可用性，不会自动把新模型加入 Bridge，避免临时模型污染 Telegram 列表。
+
+### GUI App 里探 NAS 上游
+
+在 Cherry Studio 等 GUI App 的 shell 里直连 `127.0.0.1` 会被 Stash 逐进程接管出口（EHOSTUNREACH / `fetch failed`），
+**这不是配置问题**。要在本机验 NAS 上游，用 launchd 上下文跑（见 asustor-nas-ops skill 的 `lrun.sh`），或直接看 daemon 自己的探测行：
+
+```bash
+bash ~/.gemini/config/plugins/asustor-nas-ops-plugin/skills/asustor-nas-ops/scripts/lrun.sh \
+  'cd ~/.copilot/extensions/copilot-telegram-bridge && node scripts/probe-isolated-session.mjs --provider cliproxy-nas --model cursor-auto --send'
+```
 
 ## 7. 配置与生成产物
 

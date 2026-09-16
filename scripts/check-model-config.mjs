@@ -32,6 +32,46 @@ for (const provider of config.providers) {
     );
 }
 
+// modelSets.*.provider：绑定必须指向存在/启用的 provider，且它必须真服务该组全部模型（换边不许静默失败）
+for (const [setName, set] of Object.entries(config.modelSets)) {
+    if (!set.provider) continue;
+    const owner = config.providers.find((p) => p.id === set.provider);
+    assert(owner, `modelSet ${setName} bound to unknown provider '${set.provider}'`);
+    assert(owner.enabled !== false, `modelSet ${setName} bound to disabled provider '${set.provider}'`);
+    const missing = set.models.filter((id) => !owner.models.some((m) => m.id === id));
+    assert.deepEqual(
+        missing,
+        [],
+        `provider '${set.provider}' does not serve modelSet ${setName}: ${missing.join(",")}`,
+    );
+}
+
+// bindOnly provider 必须真的被某组 modelSet 绑定 —— 否则是台没人用的死上游
+for (const provider of config.providers.filter((p) => p.bindOnly)) {
+    const bound = Object.values(config.modelSets).some((set) => set.provider === provider.id);
+    assert(bound, `bindOnly provider ${provider.id} is not bound by any modelSet`);
+}
+
+// 全局装配（未绑定 Bot 看到的模型面）不得出现同一裸 id 两个来源：
+// 选中逻辑是 models.find(id)，双来源会变成"靠数组顺序生效"的隐式行为
+{
+    const globalProviders = config.providers.filter((p) => p.enabled !== false && p.bindOnly !== true);
+    const byId = new Map();
+    for (const provider of globalProviders) {
+        for (const model of provider.models) {
+            const owners = byId.get(model.id) || [];
+            owners.push(provider.id);
+            byId.set(model.id, owners);
+        }
+    }
+    const dupes = [...byId.entries()].filter(([, owners]) => owners.length > 1);
+    assert.deepEqual(
+        dupes,
+        [],
+        `duplicate model id across global providers (would be resolved by array order): ${JSON.stringify(dupes)}`,
+    );
+}
+
 for (const botsPath of [
     join(BRIDGE_ROOT, "config", "bots.json"),
     join(BRIDGE_ROOT, "config", "bots.example.json"),

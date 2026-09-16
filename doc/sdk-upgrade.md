@@ -94,7 +94,13 @@ resolveBootstrapPath: __dir=…/runtime/<ver>/pkg                      ← 跑�
 cd ~/.copilot/extensions/copilot-telegram-bridge
 node scripts/probe-isolated-session.mjs --send          # 生产式（保留身份）
 node scripts/probe-isolated-session.mjs --no-auth --send # 真·无身份（清 token env + PATH 去掉 gh）
+node scripts/probe-isolated-session.mjs --provider cliproxy-nas --model cursor-auto --send
+                                                     # 只装配指定上游（modelSets.*.provider 绑定值）+ 钉死模型
 ```
+
+`--provider <id>` / `--model <id>`（2026-09-16 加）用来验"换上游"那条链路：
+绑到 本机时从 GUI App 里跑会 `fetch failed`（Stash 逐进程接管出口）→ 用 launchd 上下文跑，
+见 [`models-config.md`](./models-config.md) §6「GUI App 里探 NAS 上游」。
 
 临时 `COPILOT_HOME` + 独立 spawn 一个 CLI 子进程 → 验证 `start / getAuthStatus / listModels / createSession / send`
 五步，**完全不碰生产 `~/.copilot`**；硬指标是 `start`/`createSession`/`send`，退出码 0 = 通过。

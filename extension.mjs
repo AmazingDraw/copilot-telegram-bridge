@@ -1574,6 +1574,7 @@ async function registerSlashCommand(sess) {
                                 mcpServerNames: botProfile.mcpServerNames || null,
                                 skillNames: botProfile.skillNames || null,
                                 cliproxyApiKey: loadBotCliproxyApiKey(botProfile),
+                                providerId: botProfile.providerId || null,
                             });
 
                             // 1) 可 resume 才走 resume（空壳只有 workspace.yaml 会 Session not found）

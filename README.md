@@ -112,6 +112,9 @@ createBotInstance(name, token)
 - **单模型全局开关**：`catalog.<id>.enabled: false`
 - **单场景成员关系**：编辑对应 `modelSets.<name>.models`
 - **整组上游开关**：provider 级 `enabled: false`，每个 provider 只用 `modelSet` 引用模型组
+- **单 Bot 上游选边**（2026-09-16）：`modelSets.<组>.provider = <provider-id>`，模型名不变。
+  例：某台专用 Bot 走 本机（`cliproxy-nas`，`bindOnly: true`）或 Mac（`cliproxy`），改一个词 + `restart` 即切换。
+  见 [`models-config.md` §3.1/§4.1/§5.5](doc/models-config.md)。
 - **保留的回滚组**（默认全 `enabled: false`）：
   - `opencode` — OpenCode Go 直连（`OPENCODE_API_KEY`）
   - `deepseek` — DeepSeek 官方 API
