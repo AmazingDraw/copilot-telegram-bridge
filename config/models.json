@@ -19,6 +19,14 @@
     "$comment": "GitHub 身份与官方模型。login=false = 不登录（byok-only）：启动时清掉身份 env 并让 SDK 传 --no-auto-login → runtime 无身份运行；BYOK/cliproxy 全链路不受影响（2026-09-13 隔离实测：start/createSession/BYOK 回合全通），官方模型面自动视为关闭。想用官方模型：login=true（同时把 display.officialModels.enabled 设回 true）。身份来源顺序：COPILOT_GITHUB_TOKEN → GH_TOKEN → GITHUB_TOKEN → gh CLI → keychain；注意 clientMode=empty 会让 SDK 注入 COPILOT_DISABLE_KEYTAR=1（关掉 keychain）→ 排查 401 优先查 env token。",
     "login": false
   },
+  "telegram": {
+    "$comment": "Telegram 出站网络与代理配置。proxy.url 支持 HTTP CONNECT 代理（默认优先 NAS 7212）；enabled=false 或连接失败时自动回退本机直连。",
+    "proxy": {
+      "enabled": true,
+      "url": "http://127.0.0.1:7212",
+      "retryCooldownMs": 30000
+    }
+  },
   "display": {
     "officialModels": {
       "enabled": false,

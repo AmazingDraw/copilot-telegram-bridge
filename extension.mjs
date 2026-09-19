@@ -46,6 +46,7 @@ import {
     collectBotModelFallbacks,
 } from "./lib/byok-providers.mjs";
 import { loadJsonOrDefault, saveJsonAtomic } from "./lib/json-util.mjs";
+import { telegramFetch } from "./lib/telegram-fetch.mjs";
 import {
     SESSION_UUID_RE,
     SESSION_STATE_DIR,
@@ -314,7 +315,7 @@ function createBotInstance(name, token, isHeadless, botRegistryEntry = {}, enabl
             const signal = method === "getUpdates" && abortController
                 ? AbortSignal.any([abortController.signal, timeoutSignal])
                 : timeoutSignal;
-            return fetch(url, {
+            return telegramFetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(params),
@@ -441,7 +442,7 @@ async function sendFormattedMessage(chatId, markdown, opts = {}) {
                 const controller = new AbortController();
                 const timer = setTimeout(() => controller.abort(), 15000);
                 const url = `${TELEGRAM_API}/bot${botToken}/sendRichMessage`;
-                const res = await fetch(url, {
+                const res = await telegramFetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -508,7 +509,7 @@ async function sendPhoto(chatId, base64Data, mimeType, caption) {
     if (caption) form.append("caption", caption.slice(0, 1024));
 
     const url = `${TELEGRAM_API}/bot${botToken}/sendPhoto`;
-    const res = await fetch(url, { method: "POST", body: form });
+    const res = await telegramFetch(url, { method: "POST", body: form });
     if (!res.ok) {
         const body = await res.text().catch(() => "");
         throw new Error(`Telegram sendPhoto failed: ${res.status} ${body}`);
@@ -524,7 +525,7 @@ async function sendDocument(chatId, base64Data, mimeType, filename, caption) {
     if (caption) form.append("caption", caption.slice(0, 1024));
 
     const url = `${TELEGRAM_API}/bot${botToken}/sendDocument`;
-    const res = await fetch(url, { method: "POST", body: form });
+    const res = await telegramFetch(url, { method: "POST", body: form });
     if (!res.ok) {
         const body = await res.text().catch(() => "");
         throw new Error(`Telegram sendDocument failed: ${res.status} ${body}`);
@@ -727,7 +728,7 @@ async function downloadFile(filePath, opts = {}) {
     const url = `${TELEGRAM_API}/file/bot${botToken}/${filePath}`;
     const label = `download ${basename(filePath)}`;
     const res = await withTelegramFetchRetry(label, async () => {
-        const r = await fetch(url, { signal: AbortSignal.timeout(API_TIMEOUT_MS) });
+        const r = await telegramFetch(url, { signal: AbortSignal.timeout(API_TIMEOUT_MS) });
         if (!r.ok) {
             const err = new Error(`Download failed: ${r.status}`);
             err.status = r.status;

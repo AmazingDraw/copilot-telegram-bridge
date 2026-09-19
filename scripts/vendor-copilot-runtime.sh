@@ -111,17 +111,12 @@ start_daemon_after_swap() {
 }
 
 install_from_extract() {
-  local ver="$1" copilot_bin="$2" pkg_dir="$3"
+  local ver="$1" copilot_bin="$2" pkg_dir="${3:-}"
   local dest="${RUNTIME_ROOT}/${ver}"
   echo "vendor-copilot-runtime: ${ver}"
   echo "  cli=${copilot_bin}"
-  echo "  pkg(校验用)=${pkg_dir}"
   echo "  dest=${dest}"
 
-  if ! pkg_complete "${pkg_dir}"; then
-    echo "error: pkg incomplete (need copilot-sdk/ + preloads/extension_bootstrap.mjs): ${pkg_dir}" >&2
-    exit 1
-  fi
   if [[ ! -f "${copilot_bin}" ]]; then
     echo "error: CLI binary missing: ${copilot_bin}" >&2
     exit 1
@@ -158,6 +153,11 @@ install_from_extract() {
   rsync -a --delete "${src}/" "${dest}/pkg/"
   rm -rf "${selfhome}"
   prune_vendored_pkg "${dest}/pkg"
+
+  if ! pkg_complete "${dest}/pkg"; then
+    echo "error: pkg incomplete (need copilot-sdk/ + preloads/extension_bootstrap.mjs): ${dest}/pkg" >&2
+    exit 1
+  fi
 
   printf '%s\n' "${ver}" >"${RUNTIME_ROOT}/VERSION"
 

@@ -61,6 +61,32 @@ telegram-bridge: [Headless] auth: isAuthenticated=false (Not authenticated)
 
 ---
 
+## 1.2 `telegram.proxy`：出站网络与代理配置（2026-09-19 新增）
+
+```json
+"telegram": {
+  "$comment": "Telegram 出站网络与代理配置。proxy.url 支持 HTTP CONNECT 代理（默认优先 NAS 7212）；enabled=false 或连接失败时自动回退本机直连。",
+  "proxy": {
+    "enabled": true,
+    "url": "http://127.0.0.1:7212",
+    "retryCooldownMs": 30000
+  }
+}
+```
+
+| 字段 | 类型 | 默认值 | 作用说明 |
+| :--- | :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` | 是否启用出站代理。设为 `false` 则全局使用本机原生 `fetch` 直连。 |
+| `url` | `string` | `http://127.0.0.1:7212` | 代理服务器地址（支持 HTTP CONNECT 代理，优先推荐 本机出口）。环境变量 `TELEGRAM_PROXY_URL` 可覆盖。 |
+| `retryCooldownMs` | `number` | `30000` | 代理异常熔断冷却时间（毫秒）。当代理不可达时，自动回退本机网络并在冷却期内避免重试卡顿；冷却结束后自动探测恢复。 |
+
+**设计机理与自愈特性**：
+- **脱离 Stash 依赖**：Node.js 原生 `fetch` 默认不吃系统环境变量代理。通过 `lib/telegram-fetch.mjs` 在请求层建立 HTTP CONNECT 隧道直连 NAS 出海代理，即使 Mac 本机关闭 Stash，Bot 亦能秒连 Telegram。
+- **双向韧性回退**：若 本机拔除或代理端口断开，捕获异常后**立即自动回退本机网络**（不崩溃、不丢消息），并在 30s 冷却后自动无感重测 NAS 恢复状态。
+- **生效方式**：修改 `config/models.json` 后执行 `bash scripts/headless-daemon.sh restart` 即可热生效。
+
+---
+
 ## 2. Catalog 字段
 
 ```json
