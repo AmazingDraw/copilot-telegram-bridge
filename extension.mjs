@@ -107,7 +107,7 @@ function buildTelegramBotMenu(opts = {}) {
         { command: "rich", description: "📐 切换表格样式" },
     ];
     if (opts.includeReboot) {
-        menu.push({ command: "reboot", description: "🧿 重启无头服务" });
+        menu.push({ command: "reboot", description: "🧿 重启 Copilot" });
     }
     return menu;
 }
@@ -1789,7 +1789,7 @@ async function registerSlashCommand(sess) {
                                     if (age >= 0 && age <= 120000) {
                                         void sendMessage(
                                             pending.chatId,
-                                            "♻️ <b>无头服务已上线</b>",
+                                            "♻️ <b>Copilot 重启成功</b>",
                                             "HTML"
                                         ).catch((err) => {
                                             console.error(
