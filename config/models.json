@@ -43,6 +43,7 @@
     "agentsMd": "memory/AGENTS.md",
     "sessionState": "${HOME}/.copilot/session-state",
     "mcpConfig": "${HOME}/.copilot/mcp-config.json",
+    "claudeBin": "/Applications/Cherry Studio.app/Contents/Resources/app.asar.unpacked/node_modules/@anthropic-ai/claude-agent-sdk-darwin-arm64/claude",
     "claudeWorkDir": "${HOME}/.agents/workspace",
     "claudeSessionDir": "${HOME}/.claude",
     "claudeStateDir": "/tmp/telegram-bridge/claude"

@@ -98,6 +98,7 @@ Claude Code 官方说明：跳过 hooks、LSP、plugin 同步、attribution、au
 
 | 留下 | 说明 |
 | :--- | :--- |
+| 执行程序 | `paths.claudeBin`（优先读配置，次选 Cherry Studio 内置 Claude Code 引擎，最后回退系统 PATH） |
 | Claude Code 内置核心工具 | `Bash`、`Read`、`Write`、`Edit`、`Glob`、`Grep`、Web 搜索/抓取等 CLI 默认工具 |
 | `--dangerously-skip-permissions` | 非计划模式；Telegram 远程不能点本机权限窗 |
 | 工作目录 | `paths.claudeWorkDir`，默认 `~/.agents/workspace`（`spawn` 的 `cwd`） |
@@ -153,6 +154,7 @@ Claude Code 官方说明：跳过 hooks、LSP、plugin 同步、attribution、au
   "claudeStrictMcp": true
 },
 "paths": {
+  "claudeBin": "/Applications/Cherry Studio.app/Contents/Resources/app.asar.unpacked/node_modules/@anthropic-ai/claude-agent-sdk-darwin-arm64/claude",
   "claudeWorkDir": "${HOME}/.agents/workspace",
   "claudeSessionDir": "${HOME}/.claude",
   "claudeStateDir": "/tmp/telegram-bridge/claude"
@@ -161,6 +163,7 @@ Claude Code 官方说明：跳过 hooks、LSP、plugin 同步、attribution、au
 
 | 键 | 作用 |
 | :--- | :--- |
+| `claudeBin` | Claude Code 可执行文件路径。不填时自动探测 Cherry Studio 内置的原生 Claude Code 引擎（免单独安装） |
 | `claudeBare` | `false` = 不要 `--bare`（全量 CLAUDE.md / hooks / 插件 / 记忆） |
 | `claudeStrictMcp` | `false` = 允许 Claude 读用户/项目 MCP 配置 |
 | `claudeModelSet` | 菜单模型列表；增删只改这组和 `catalog` |

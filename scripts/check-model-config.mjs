@@ -84,6 +84,14 @@ for (const botsPath of [
     }
 }
 
+// paths.claudeBin 校验：如果显式配置了路径，该文件在磁盘上必须真实存在
+if (config.paths?.claudeBin) {
+    assert(
+        existsSync(config.paths.claudeBin),
+        `paths.claudeBin '${config.paths.claudeBin}' does not exist on disk`,
+    );
+}
+
 {
     const setName = config.defaults.claudeModelSet;
     assert(setName, "defaults.claudeModelSet is required");
