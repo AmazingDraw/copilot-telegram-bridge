@@ -92,6 +92,14 @@ if (config.paths?.claudeBin) {
     );
 }
 
+// paths.claudePersona 校验：如果显式配置了路径，该文件在磁盘上必须真实存在
+if (config.paths?.claudePersona) {
+    assert(
+        existsSync(config.paths.claudePersona),
+        `paths.claudePersona '${config.paths.claudePersona}' does not exist on disk`,
+    );
+}
+
 {
     const setName = config.defaults.claudeModelSet;
     assert(setName, "defaults.claudeModelSet is required");

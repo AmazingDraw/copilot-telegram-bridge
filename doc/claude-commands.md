@@ -102,7 +102,7 @@ Claude Code 官方说明：跳过 hooks、LSP、plugin 同步、attribution、au
 | Claude Code 内置核心工具 | `Bash`、`Read`、`Write`、`Edit`、`Glob`、`Grep`、Web 搜索/抓取等 CLI 默认工具 |
 | `--dangerously-skip-permissions` | 非计划模式；Telegram 远程不能点本机权限窗 |
 | 工作目录 | `paths.claudeWorkDir`，默认 `~/.agents/workspace`（`spawn` 的 `cwd`） |
-| 本端人设 | `~/.claude/CLAUDE.md`；`--bare` 不会自动发现，Bridge 用 `--append-system-prompt` 追加。人设只改这个文件，不同步仓库 |
+| 本端人设 | `paths.claudePersona`（默认 `memory/CLAUDE.md`，回退 `~/.claude/CLAUDE.md`）；`--bare` 不会自动发现，Bridge 用 `--append-system-prompt` 追加 |
 | 会话落盘 | `~/.claude/projects/…`；`--resume <uuid>` 续聊 |
 | 你在 Telegram 里打的 prompt | `-p` |
 | 模型 / 思考档 / 计划 | `--model`、`--effort`、`--permission-mode plan` |
@@ -155,6 +155,7 @@ Claude Code 官方说明：跳过 hooks、LSP、plugin 同步、attribution、au
 },
 "paths": {
   "claudeBin": "/Applications/Cherry Studio.app/Contents/Resources/app.asar.unpacked/node_modules/@anthropic-ai/claude-agent-sdk-darwin-arm64/claude",
+  "claudePersona": "memory/CLAUDE.md",
   "claudeWorkDir": "${HOME}/.agents/workspace",
   "claudeSessionDir": "${HOME}/.claude",
   "claudeStateDir": "/tmp/telegram-bridge/claude"
@@ -164,6 +165,7 @@ Claude Code 官方说明：跳过 hooks、LSP、plugin 同步、attribution、au
 | 键 | 作用 |
 | :--- | :--- |
 | `claudeBin` | Claude Code 可执行文件路径。不填时自动探测 Cherry Studio 内置的原生 Claude Code 引擎（免单独安装） |
+| `claudePersona` | Claude 人设路径（默认 `memory/CLAUDE.md`，私密人设不进公开仓） |
 | `claudeBare` | `false` = 不要 `--bare`（全量 CLAUDE.md / hooks / 插件 / 记忆） |
 | `claudeStrictMcp` | `false` = 允许 Claude 读用户/项目 MCP 配置 |
 | `claudeModelSet` | 菜单模型列表；增删只改这组和 `catalog` |
