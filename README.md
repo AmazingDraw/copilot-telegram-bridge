@@ -25,7 +25,7 @@
 - 每 bot 独立目录：`bots/<Name>/`（lock / state / leader）
 - 开关：`bots.json` 各 bot 的 `disabled`（`true` 则跳过；热重载需重启 Headless 守护）
 - 角色：只认 `headless`。遗留 `role: editor` 启动时跳过。
-- 专文：[`headless-daemon.md`](doc/headless-daemon.md) · [`models-config.md`](doc/models-config.md) · [`system-prompts.md`](doc/system-prompts.md) · [`sdk-upgrade.md`](doc/sdk-upgrade.md)
+- 专文：[`headless-daemon.md`](doc/headless-daemon.md) · [`models-config.md`](doc/models-config.md) · [`network-proxy.md`](doc/network-proxy.md) · [`system-prompts.md`](doc/system-prompts.md) · [`sdk-upgrade.md`](doc/sdk-upgrade.md)
 
 ### 模块拆分
 
@@ -45,7 +45,6 @@ lib/
   bot-runtime.mjs      # sendQueue、typing、tool bubble、processUpdate、poll/lock
   bot-handlers.mjs     # session 事件 → TG；permission / ask_user 工厂
   bot-commands.mjs     # /session /clean /model /mode 与 callback
-  claude-commands.mjs  # /claude 子菜单 · FIFO；见 doc/claude-commands.md
 config/models.json     # 模型唯一真源：catalog / modelSets / provider
 memory/                # 人设真源：AGENTS.md（仅本机仓，不开源）
 ```
@@ -156,33 +155,6 @@ bash ~/.copilot/extensions/copilot-telegram-bridge/scripts/headless-daemon.sh un
 
 登录分层（GitHub 宿主 / cliproxy / Telegram）见 [`doc/headless-daemon.md`](doc/headless-daemon.md)「登录与鉴权」。
 
-### Claude 子命令（/claude）
-
-专文：[`doc/claude-commands.md`](doc/claude-commands.md)（开场裁剪、超时排队、配置项）。
-
-通过 Telegram 控制 **Claude Code CLI**（配置/会话仍在 `~/.claude`，任务 cwd 为 `~/.agents/workspace`）。直连 CLI Proxy `:8317` 的 Anthropic `/v1/messages`。
-
-```bash
-/claude                    # 打开子命令菜单
-/claude <prompt>           # 直接新对话执行（不走菜单）
-```
-
-| 菜单项 | callback | 说明 |
-| :--- | :--- | :--- |
-| ✨ 新建对话 | `claude:new` | 新对话输入态 |
-| 📂 继续对话 | `claude:resume` | 历史会话（history.jsonl + projects） |
-| 🧠 切换模型 | `claude:model` | 列表来自 `config/models.json` → `modelSets.claude-cli` |
-| 🗺 计划 | `claude:plan` | `--permission-mode plan`；结束后「✅ 按计划执行」 |
-| ⚡️ 思考档 | `claude:effort` | `--effort`：低/中/高/极高/最大（💎） |
-| 🛟 备援模型 | `claude:fallback` | 主模型 429/配额耗尽后由 Bridge 换模型再跑一次（不走 Claude `--fallback-model`） |
-| 📡 实时 | `claude:stream` | `stream-json` 刷新进度 |
-| 📊 查看进度 | `claude:progress` | 最近任务状态 |
-| ✋ 停止任务 | `claude:stop` | 停止运行中任务 |
-| 🚪 退出桥接 | `claude:exit` | 清模型/计划/思考档/备援 |
-
-**模型增删**：只改 `config/models.json` 的 `modelSets.claude-cli` 与 `catalog`。Haiku / Small-Fast：`defaults.claudeHaikuModel`、`claudeSmallFastModel`。改完 `bash scripts/headless-daemon.sh restart`。
-
-**计划模式**：与 `--dangerously-skip-permissions` 互斥。规划轮只读；批准后同一 session `--resume` 再执行。
 
 ### 排版与出站
 

@@ -1,6 +1,6 @@
 {
   "name": "copilot-cli-telegram-bridge",
-  "description": "Headless Telegram bridge for GitHub Copilot CLI. Vendored CLI+SDK, no Copilot.app. Multi-bot, sessions, cliproxy models; optional /claude.",
+  "description": "Headless Telegram bridge for GitHub Copilot CLI. Vendored CLI+SDK, no Copilot.app. Multi-bot, sessions, cliproxy models.",
   "version": "1.0.0",
   "author": {
     "name": "examon",
@@ -9,7 +9,12 @@
   "homepage": "https://github.com/github/copilot-cli-telegram-bridge",
   "repository": "https://github.com/github/copilot-cli-telegram-bridge",
   "license": "MIT",
-  "keywords": ["telegram", "bridge", "remote", "messaging"],
+  "keywords": [
+    "telegram",
+    "bridge",
+    "remote",
+    "messaging"
+  ],
   "category": "integration",
   "skills": "skills/",
   "postInstallMessage": "Restart Copilot CLI, then run /copilot-cli-telegram-bridge:telegram-install to complete setup."

@@ -1,29 +1,19 @@
 {
   "$comment": "Bridge 模型单一真源。模型规格只写入 catalog；Headless、回滚 provider 与单 Bot 策略通过 modelSets 引用。改完后运行 bash scripts/headless-daemon.sh restart。密钥不写这里，走 env / apiKeyFromFile / cliproxy yaml。覆盖路径：HEADLESS_MODELS_CONFIG。",
   "schemaVersion": 2,
-  "officialFallback": "cliproxy/gemini-flash",
+  "officialFallback": "cliproxy/cline-free/deepseek-flash",
   "defaults": {
-    "maxContextWindowTokens": 200000,
-    "claudeWaitTimeoutMs": 3600000,
-    "claudeDefaultModel": "gemini-flash",
-    "claudeFallbackModel": "cursor-auto",
-    "claudeDefaultEffort": "",
-    "claudeModelSet": "claude-cli",
-    "claudeModelPrefix": "",
-    "claudeHaikuModel": "cursor-auto",
-    "claudeSmallFastModel": "cursor-auto",
-    "claudeBare": true,
-    "claudeStrictMcp": true
+    "maxContextWindowTokens": 200000
   },
   "auth": {
     "$comment": "GitHub 身份与官方模型。login=false = 不登录（byok-only）：启动时清掉身份 env 并让 SDK 传 --no-auto-login → runtime 无身份运行；BYOK/cliproxy 全链路不受影响（2026-09-13 隔离实测：start/createSession/BYOK 回合全通），官方模型面自动视为关闭。想用官方模型：login=true（同时把 display.officialModels.enabled 设回 true）。身份来源顺序：COPILOT_GITHUB_TOKEN → GH_TOKEN → GITHUB_TOKEN → gh CLI → keychain；注意 clientMode=empty 会让 SDK 注入 COPILOT_DISABLE_KEYTAR=1（关掉 keychain）→ 排查 401 优先查 env token。",
     "login": false
   },
   "telegram": {
-    "$comment": "Telegram 出站网络与代理配置。proxy.url 支持 HTTP CONNECT 代理（默认优先 NAS 7212）；enabled=false 或连接失败时自动回退本机直连。",
+    "$comment": "Telegram 出站网络与代理配置。proxy.url 支持 HTTP CONNECT 代理（默认优先 NAS 7214）；enabled=false 或连接失败时自动回退本机直连。",
     "proxy": {
       "enabled": true,
-      "url": "http://127.0.0.1:7212",
+      "url": "http://127.0.0.1:7214",
       "retryCooldownMs": 30000
     }
   },
@@ -42,12 +32,7 @@
     "cliproxyConfig": "${HOME}/.cli-proxy-api/config.yaml",
     "agentsMd": "memory/AGENTS.md",
     "sessionState": "${HOME}/.copilot/session-state",
-    "mcpConfig": "${HOME}/.copilot/mcp-config.json",
-    "claudeBin": "/Applications/Cherry Studio.app/Contents/Resources/app.asar.unpacked/node_modules/@anthropic-ai/claude-agent-sdk-darwin-arm64/claude",
-    "claudePersona": "memory/CLAUDE.md",
-    "claudeWorkDir": "${HOME}/.agents/workspace",
-    "claudeSessionDir": "${HOME}/.claude",
-    "claudeStateDir": "/tmp/telegram-bridge/claude"
+    "mcpConfig": "${HOME}/.copilot/mcp-config.json"
   },
   "launchAgentLabel": "com.copilot-telegram-bridge",
   "catalog": {
@@ -75,11 +60,29 @@
       "maxContextWindowTokens": 1000000,
       "maxOutputTokens": 32000
     },
-    "gemini-flash": {
-      "label": "Gemini Flash",
+    "cline-free/deepseek-flash": {
+      "label": "Cline Free DS Flash",
       "maxPromptTokens": 1000000,
       "maxContextWindowTokens": 1000000,
-      "maxOutputTokens": 65536
+      "maxOutputTokens": 32000
+    },
+    "cline-pass/deepseek-flash": {
+      "label": "Cline Pass DS Flash",
+      "maxPromptTokens": 1000000,
+      "maxContextWindowTokens": 1000000,
+      "maxOutputTokens": 32000
+    },
+    "cline-pass/mimo-flash": {
+      "label": "Cline Pass MiMo Flash",
+      "maxPromptTokens": 1000000,
+      "maxContextWindowTokens": 1000000,
+      "maxOutputTokens": 32000
+    },
+    "cline-free/mimo-flash": {
+      "label": "Cline Free MiMo Flash",
+      "maxPromptTokens": 1000000,
+      "maxContextWindowTokens": 1000000,
+      "maxOutputTokens": 32000
     },
     "cursor-auto": {
       "label": "Cursor Auto",
@@ -131,22 +134,14 @@
     }
   },
   "modelSets": {
-    "claude-cli": {
-      "$comment": "/claude 模型菜单。增删只改这里；发给 CLI 的 slug 为 catalog id（直连 cliproxy，无 cliproxy/ 前缀）。",
-      "defaultModel": "gemini-flash",
-      "models": [
-        "gemini-flash",
-        "cursor-auto",
-        "cursor-grok-4.6-high",
-        "kimi-k3-high",
-        "kimi-k3-max"
-      ]
-    },
     "headless": {
       "$comment": "Headless 主 Bot 的有序模型列表；顺序同时用于 /model 与默认选择。",
-      "defaultModel": "gemini-flash",
+      "defaultModel": "cline-free/deepseek-flash",
       "models": [
-        "gemini-flash",
+        "cline-free/deepseek-flash",
+        "cline-pass/deepseek-flash",
+        "cline-pass/mimo-flash",
+        "cline-free/mimo-flash",
         "cursor-auto",
         "cursor-grok-4.6-low",
         "cursor-grok-4.6-medium",

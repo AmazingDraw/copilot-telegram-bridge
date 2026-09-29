@@ -90,7 +90,8 @@ const BOTS_DIR = join(EXT_DIR, "bots");
 
 /**
  * Telegram Bot 命令菜单（无头 bot 共用）。
- * 无头 /reboot 靠 launchd KeepAlive 真重启；受限菜单 bot 不加此项。
+ * 无头 /reboot 靠 launchd KeepAlive 真重启；/cliproxy 重启本机 cli-proxy-api。
+ * 受限菜单 bot 不加这两项。
  * @param {{ includeReboot?: boolean }} [opts]
  */
 function buildTelegramBotMenu(opts = {}) {
@@ -101,13 +102,13 @@ function buildTelegramBotMenu(opts = {}) {
         { command: "status", description: "📊 查看当前状态" },
         { command: "model", description: "✴️ 切换 AI 模型" },
         { command: "mode", description: "🎮 切换交互模式" },
-        { command: "claude", description: "🤖 Claude 交互" },
         { command: "rename", description: "✏️ 修改会话名称" },
         { command: "clean", description: "♻️ 清理历史会话" },
         { command: "rich", description: "📐 切换表格样式" },
     ];
     if (opts.includeReboot) {
         menu.push({ command: "reboot", description: "🧿 重启 Copilot" });
+        menu.push({ command: "cliproxy", description: "✳️ 重启 cliproxy" });
     }
     return menu;
 }
@@ -275,10 +276,6 @@ function createBotInstance(name, token, isHeadless, botRegistryEntry = {}, enabl
     let awaitingInput = null;
     /** @type {{ chatId: number, timer: ReturnType<typeof setTimeout>, startedAt: number } | null} */
     let awaitingRename = null;
-    /** @type {{ chatId: number, mode: string, sessionId?: string, timer: ReturnType<typeof setTimeout>, startedAt: number } | null} */
-    let awaitingClaude = null;
-    /** 当前对话已切换的 Claude 模型（仅本次会话生效；退出桥接后恢复默认） */
-    let claudeModel = "";
     let connected = false;
     let isAgentBusy = false;
     let botInfo = null;
@@ -926,10 +923,6 @@ const ctx = {
     set awaitingInput(v) { awaitingInput = v; },
     get awaitingRename() { return awaitingRename; },
     set awaitingRename(v) { awaitingRename = v; },
-    get awaitingClaude() { return awaitingClaude; },
-    set awaitingClaude(v) { awaitingClaude = v; },
-    get claudeModel() { return claudeModel; },
-    set claudeModel(v) { claudeModel = v; },
     get isAgentBusy() { return isAgentBusy; },
     set isAgentBusy(v) { isAgentBusy = v; },
     get currentSessionId() { return currentSessionId; },
@@ -1093,10 +1086,6 @@ const {
     getDisplayModels,
     handleStatusCommand,
     handleRichCommand,
-    handleClaudeCommand,
-    handleClaudeCallback,
-    tryConsumeClaudeInput,
-    handleClaudeProgress,
 } = attachCommands(ctx);
 
 // Late-bind command handlers for processUpdate (runtime closed over ctx)
@@ -1121,10 +1110,6 @@ Object.assign(ctx, {
     getDisplayModels,
     handleStatusCommand,
     handleRichCommand,
-    handleClaudeCommand,
-    handleClaudeCallback,
-    tryConsumeClaudeInput,
-    handleClaudeProgress,
 });
 
 // bubbleActive / lastCompletedToolDesc live in runtime via defineProperty on ctx
@@ -1160,6 +1145,33 @@ async function handleSetup(name) {
         "3. Copy the bot token BotFather gives you\n" +
         "4. Paste it here"
     );
+}
+
+
+async function restoreTelegramIdentity(reason = "reconnect") {
+    registry = loadJsonOrDefault(BOTS_REGISTRY_PATH, {});
+    const fromReg = registry?.[name]?.token;
+    const next = (typeof fromReg === "string" && fromReg.trim())
+        ? fromReg.trim()
+        : (typeof token === "string" ? token.trim() : "");
+    if (!next) {
+        throw new Error("Bot token not configured");
+    }
+    const needMe = !botInfo || botToken !== next;
+    botToken = next;
+    currentBotName = name;
+    if (!state) {
+        state = loadJsonOrDefault(botStatePath(name), { offset: 0 });
+        if (currentSessionId) state.lastSessionId = currentSessionId;
+    }
+    if (needMe) {
+        try {
+            botInfo = await getMe();
+        } catch (err) {
+            console.error(`telegram-bridge: [${name}] getMe after ${reason} failed: ${err.message}`);
+        }
+    }
+    console.error(`telegram-bridge: [${name}] telegram identity restored (${reason})`);
 }
 
 async function handleConnect(name, sessionId) {
@@ -1364,6 +1376,7 @@ async function handleRemove(name, sessionId) {
     await session.log(`Bot '${name}' removed.`);
 }
 
+ctx.restoreTelegramIdentity = restoreTelegramIdentity;
 ctx.handleConnect = handleConnect;
 ctx.handleDisconnect = handleDisconnect;
 ctx.handleSetup = handleSetup;
@@ -1750,6 +1763,9 @@ async function registerSlashCommand(sess) {
                                 }
                             }
 
+                            // 无头重连只 resume Copilot 时，409/disconnect 可能已把 botToken 清掉。
+                            // pollLoop / setMyCommands 必须先把 registry token 挂回去。
+                            await restoreTelegramIdentity("headless-connect");
                             connected = true;
 
                             // 菜单/显示名均为 best-effort：绝不 await，避免 TG 瞬断阻塞 pollLoop 进入

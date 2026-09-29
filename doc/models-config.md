@@ -2,7 +2,7 @@
 
 > Bridge 的模型 ID、窗口、排序、Headless 列表、回滚列表与单 Bot 模型组，唯一真源都是 `config/models.json`。
 > 修改后运行校验并重启 Headless；不要再到代码或文档里复制模型清单。
-> Headless / Claude 菜单直接读 catalog。
+> Headless 菜单直接读 catalog。
 
 ## 1. 文件结构
 
@@ -29,7 +29,6 @@ config/models.json
 | 路径 | 运行时读取 | 如何更新 |
 | :--- | :--- | :--- |
 | Headless Telegram Bot | `catalog` → SDK `ProviderModelConfig` | 改 catalog 后重启 Headless daemon |
-| Claude CLI（`/claude`） | `modelSets.claude-cli` + catalog id | 改 set / catalog 后重启 daemon |
 
 无头会话不读 `~/.copilot/data.db`；窗口只走 catalog → SDK。
 
@@ -63,12 +62,14 @@ telegram-bridge: [Headless] auth: isAuthenticated=false (Not authenticated)
 
 ## 1.2 `telegram.proxy`：出站网络与代理配置（2026-09-19 新增）
 
+> 完整网络路径（Telegram / cliproxy / 回退 / 排障）：[`network-proxy.md`](./network-proxy.md)。
+
 ```json
 "telegram": {
-  "$comment": "Telegram 出站网络与代理配置。proxy.url 支持 HTTP CONNECT 代理（默认优先 NAS 7212）；enabled=false 或连接失败时自动回退本机直连。",
+  "$comment": "Telegram 出站网络与代理配置。proxy.url 支持 HTTP CONNECT 代理（默认优先 NAS 7214）；enabled=false 或连接失败时自动回退本机直连。",
   "proxy": {
     "enabled": true,
-    "url": "http://127.0.0.1:7212",
+    "url": "http://127.0.0.1:7214",
     "retryCooldownMs": 30000
   }
 }
@@ -77,7 +78,7 @@ telegram-bridge: [Headless] auth: isAuthenticated=false (Not authenticated)
 | 字段 | 类型 | 默认值 | 作用说明 |
 | :--- | :--- | :--- | :--- |
 | `enabled` | `boolean` | `true` | 是否启用出站代理。设为 `false` 则全局使用本机原生 `fetch` 直连。 |
-| `url` | `string` | `http://127.0.0.1:7212` | 代理服务器地址（支持 HTTP CONNECT 代理，优先推荐 本机出口）。环境变量 `TELEGRAM_PROXY_URL` 可覆盖。 |
+| `url` | `string` | `http://127.0.0.1:7214` | 代理服务器地址（支持 HTTP CONNECT 代理，优先推荐 本机出口）。环境变量 `TELEGRAM_PROXY_URL` 可覆盖。 |
 | `retryCooldownMs` | `number` | `30000` | 代理异常熔断冷却时间（毫秒）。当代理不可达时，自动回退本机网络并在冷却期内避免重试卡顿；冷却结束后自动探测恢复。 |
 
 **设计机理与自愈特性**：
@@ -117,8 +118,6 @@ catalog.<id>.maxContextWindowTokens → SDK maxContextWindowTokens
 catalog.<id>.maxOutputTokens        → SDK maxOutputTokens
 ```
 
-`/claude` 增删只改 `modelSets.claude-cli` 与 catalog，不另写窗口表。
-
 ## 3. Model Sets
 
 ```json
@@ -135,7 +134,6 @@ catalog.<id>.maxOutputTokens        → SDK maxOutputTokens
 ```
 
 - `headless`：主无头 Bot 列表与排序。
-- `claude-cli`：`/claude` 模型菜单。
 - `rollback-*`：各备用 provider 的模型子集。
 - 其他命名组：供单 Bot `modelSet` 引用。
 
@@ -190,7 +188,7 @@ provider 不再包含 `models[]` 对象。回滚时只切换 provider 的 `enabl
 - `bindOnly: true` ⇒ **不参与未绑定 Bot 的全局模型面**，只被 `modelSets.<组>.provider` 指到它的 Bot 装配。
 - 为什么需要它：模型选中逻辑是 `models.find(裸 id)`，**两台 provider 同时提供 `cursor-auto` 会按数组顺序生效**（隐式）。`bindOnly` + 绑定把"走哪台"变成显式配置。
 - 契约：`check-model-config.mjs` 断言「全局装配不得出现同裸 id 双来源」与「`bindOnly` provider 必须被某组 `modelSet` 绑定」；`bindOnly` 被摘掉会立刻报错。
-- **不要改 `cliproxy` 这个 id**：`/claude` 的上游是 `providers.find(p => p.id === "cliproxy").baseUrl`（硬编码）。
+- **不要改 `cliproxy` 这个 id**：默认无头上游常按 `providers.find(p => p.id === "cliproxy")` 查找。
 
 密钥解析优先级：
 
@@ -301,7 +299,6 @@ headless BYOK config ... providers=<provider> models=<provider>/<id>,...
 | Headless 仍显示旧窗口 | 是否重启 daemon；模型是否属于启用 provider 的 model set；是否 `/new` |
 | live 模型缺失 | `--live` 核对上游 `/v1/models` |
 | 上游截断或 400 | catalog 声明值超过上游真实能力 |
-| `/claude` 列表不对 | `modelSets.claude-cli` 与 `defaults.claudeDefaultModel` |
 
 上游 `/v1/models` 只负责验证可用性，不会自动把新模型加入 Bridge，避免临时模型污染 Telegram 列表。
 
